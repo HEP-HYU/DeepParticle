@@ -67,7 +67,7 @@ with tf.Session() as sess:
   sess.run(tf.global_variables_initializer())
   if os.path.exists('models/'+model_output_name+'/model_out.meta'):
       print "Model file exists already!"
-      saver.restore(sess, 'models/layer1_30/model_out')
+      saver.restore(sess, 'models/'+model_output_name+'/model_out')
   else:
     for i in range(10):
       for j in range(epoch_size):
