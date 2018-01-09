@@ -161,14 +161,32 @@ np.save('H_qcd_feature_mu_20_res_20_large_test', H_dijet_feature)
 np.save('H_zjets_mu_20_res_20_large_full', mass_top)
 np.save('H_qcd_mu_20_res_20_large_full', mass_dijet)
 
+def get_addHists( histos ):
+  for i in range(len(histos)):
+    if i == 0:
+      H = histos[i]
+    else:
+      H = H + histos[i]
+  return H
+
+H_s = get_addHists(H_top)
+H_b = get_addHists(H_dijet)
+
 ### Plot a random sample of each
 fig = plt.figure()
 ax = fig.add_subplot(131)
 ax.set_title('zjets')
-im = plt.imshow(H_top[int(np.random.uniform(0,len(H_top)))], interpolation='nearest', origin='low',
+#h_signal = H_top[int(np.random.uniform(0,len(H_top)))] #pick one randomly 
+h_signal = H_s #total 
+im = plt.imshow(h_signal, interpolation='nearest', origin='low',
                 extent=[-pi/2, pi/2, -pi/2, pi/2])
 ax = fig.add_subplot(133)
 ax.set_title('qcd')
-im = plt.imshow(H_dijet[int(np.random.uniform(0,len(H_dijet)))], interpolation='nearest', origin='low',
+#h_background = H_dijet[int(np.random.uniform(0,len(H_dijet)))] # pick one randomly
+h_background = H_b # total 
+im = plt.imshow(h_background, interpolation='nearest', origin='low',
                 extent=[-pi/2, pi/2, -pi/2, pi/2])
 plt.show()
+
+
+
