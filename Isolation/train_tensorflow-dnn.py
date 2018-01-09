@@ -89,22 +89,22 @@ with tf.Session() as sess:
 
   #save output for later use
   with open('signal.csv', 'wb') as f:
-    writer = csv.writer(f)
+    writer = csv.writer(f, delimiter=" ")
     for i in range(len(valid_data)):
       x = valid_data_out[i] #valdiation label
       if x == 1: #signal output 
         signal_output.append( pred[i] ) 
         y = pred[i]
-        writer.writerow( y )
+        writer.writerows( zip(y,x) )       
 
   with open('background.csv', 'wb') as f:
-    writer = csv.writer(f)
+    writer = csv.writer(f, delimiter=" ")
     for i in range(len(valid_data)):
       x = valid_data_out[i] #validation level
       if x == 0: #background output
         background_output.append( pred[i] ) 
         y = pred[i]
-        writer.writerow( y )
+        writer.writerows( zip(y,x) )
 
   #convert to numpy array
   s_output = np.array(signal_output)
