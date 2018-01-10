@@ -63,11 +63,15 @@ h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
 h_pool2 = max_pool_2x2(h_conv2)
 
 ###fully connected
-W1 = weight_variable( [5*5*64,800] )
-b1 = bias_variable( [800] )
+W1 = weight_variable( [5*5*64,400] )
+b1 = bias_variable( [400] )
+
 h_pool2_flat = tf.reshape(h_pool2, [-1, 5*5*64])
-A1 = tf.nn.relu(tf.matmul(h_pool2_flat, W1) + b1)
-W2 = weight_variable( [800,1] )
+keep_prob = tf.placeholder(tf.float32)
+h_fc1_drop = tf.nn.dropout(h_pool2_flat, keep_prob)
+
+A1 = tf.nn.relu(tf.matmul(h_fc1_drop, W1) + b1)
+W2 = weight_variable( [400,1] )
 b2 = bias_variable( [1] )
 y = tf.matmul(A1,W2) + b2
 ##################
@@ -85,7 +89,7 @@ epoch = 0
 
 saver = tf.train.Saver()
 
-model_output_name = "veto_cnn_layer2_1600_800"
+model_output_name = "veto_cnn_layer2_1600_400"
 tmpout = ""
 with tf.Session() as sess:
   sess.run(tf.global_variables_initializer())
@@ -102,7 +106,7 @@ with tf.Session() as sess:
         epoch = epoch + 1
         tmpout = str(epoch) + " epoch passed"
         print tmpout
-      train_step.run(feed_dict={x: batch_data, y_: batch_data_out})
+      train_step.run(feed_dict={x: batch_data, y_: batch_data_out, keep_prob: 0.5})
 
     saver.save(sess,  'models/'+model_output_name+'/model_out')
     print "Model saved!"
@@ -110,7 +114,7 @@ with tf.Session() as sess:
   prediction = tf.nn.sigmoid(y) 
 
   nvalid = len(valid_data)
-  pred = prediction.eval( feed_dict={x: valid_data, y_: valid_data_out} )
+  pred = prediction.eval( feed_dict={x: valid_data, y_: valid_data_out, keep_prob: 1.0} )
   print pred  
 
   y = []
