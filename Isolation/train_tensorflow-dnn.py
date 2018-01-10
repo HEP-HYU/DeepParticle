@@ -11,8 +11,8 @@ def bias_variable(shape):
   initial = tf.constant(0.1, shape=shape)
   return tf.Variable(initial)
 
-train_p=np.load('H_zjets_feature_mu_20_res_20_large_test.npy').astype(np.float32) #positive samples (zjets)
-train_n=np.load('H_qcd_feature_mu_20_res_20_large_test.npy').astype(np.float32) #negative samples (qcd)
+train_p=np.load('data/veto/H_zjets_feature_mu_20_res_20_large_test.npy').astype(np.float32) #positive samples (zjets)
+train_n=np.load('data/veto/H_qcd_feature_mu_20_res_20_large_test.npy').astype(np.float32) #negative samples (qcd)
 
 train_data=np.vstack((train_p,train_n))
 train_out=np.array([1]*len(train_p)+[0]*len(train_n))
@@ -41,10 +41,10 @@ x = tf.placeholder(tf.float32, shape=[None, 400]) #20x20
 y_ = tf.placeholder(tf.float32, shape=[None, 1])
 
 ##### Model #####
-W1 = weight_variable( [400,10] )
-b1 = bias_variable( [10] )
+W1 = weight_variable( [400,800] )
+b1 = bias_variable( [800] )
 A1 = tf.nn.relu(tf.matmul(x, W1) + b1)
-W2 = weight_variable( [10,1] )
+W2 = weight_variable( [800,1] )
 b2 = bias_variable( [1] )
 y = tf.matmul(A1,W2) + b2
 ##################
@@ -55,26 +55,31 @@ cross_entropy = tf.reduce_mean(
 train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 
 ntrain = len(train_data)
-batch_size = 105 
-epoch_size = ntrain/batch_size
+batch_size = 1024
 cur_id = 0
+epoch = 0
 
 saver = tf.train.Saver()
 
-model_output_name = "layer1_10"
+model_output_name = "veto_layer2_800_800"
 
+tmpout = ""
 with tf.Session() as sess:
   sess.run(tf.global_variables_initializer())
   if os.path.exists('models/'+model_output_name+'/model_out.meta'):
       print "Model file exists already!"
       saver.restore(sess, 'models/'+model_output_name+'/model_out')
   else:
-    for i in range(10):
-      for j in range(epoch_size):
-        batch_data = train_data[cur_id:cur_id+batch_size]
-        batch_data_out = train_data_out[cur_id:cur_id+batch_size]
-        cur_id = cur_id+batch_size
-        train_step.run(feed_dict={x: batch_data, y_: batch_data_out})
+    for i in range(1000000):
+      batch_data = train_data[cur_id:cur_id+batch_size]
+      batch_data_out = train_data_out[cur_id:cur_id+batch_size]
+      cur_id = cur_id+batch_size
+      if cur_id > ntrain:
+        cur_id = 0
+        epoch = epoch + 1
+        tmpout = str(epoch) + " epoch passed"
+        print tmpout
+      train_step.run(feed_dict={x: batch_data, y_: batch_data_out})
 
     saver.save(sess,  'models/'+model_output_name+'/model_out')
     print "Model saved!"
@@ -88,24 +93,17 @@ with tf.Session() as sess:
   background_output = []
 
   #save output for later use
-  with open('signal.csv', 'wb') as f:
+  with open('models/'+model_output_name+'/output.csv', 'wb') as f:
     writer = csv.writer(f, delimiter=" ")
     for i in range(len(valid_data)):
       x = valid_data_out[i] #valdiation label
-      if x == 1: #signal output 
-        signal_output.append( pred[i] ) 
-        y = pred[i]
-        writer.writerows( zip(y,x) )       
-
-  with open('background.csv', 'wb') as f:
-    writer = csv.writer(f, delimiter=" ")
-    for i in range(len(valid_data)):
-      x = valid_data_out[i] #validation level
-      if x == 0: #background output
-        background_output.append( pred[i] ) 
-        y = pred[i]
-        writer.writerows( zip(y,x) )
-
+      y = pred[i]
+      writer.writerows( zip(y,x) )
+      if x == 1: #signal output
+        signal_output.append( y )
+      elif x == 0: #background output
+        background_output.append( y )
+ 
   #convert to numpy array
   s_output = np.array(signal_output)
   b_output = np.array(background_output)
@@ -129,5 +127,11 @@ with tf.Session() as sess:
   bkg_eff = float(nb_sel)/float(nb_total)
  
   print "signal eff = ", sig_eff, " background eff = ", bkg_eff
+
+  f = open('models/'+model_output_name+'/log.txt', 'w')
+  f.write(tmpout)
+  printout = "signal eff = " + str(sig_eff) + " background eff = " + str(bkg_eff)
+  f.write(printout)
+  f.close()
 
 

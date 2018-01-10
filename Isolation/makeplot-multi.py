@@ -23,7 +23,7 @@ def plot(vsig, vbkg, num_bins, minx, maxx, title, name):
   plt.legend(loc='upper right')
   plt.show()
 
-  fig.savefig(name+".pdf")
+  fig.savefig('models/output_'+name+'.pdf')
 
   return sn3, bn3
 
@@ -40,43 +40,46 @@ def split_data( data ):
 
   return tmp_sig, tmp_bkg
 
-output_relIso = csv.reader(open('data/large_mu_20/rel_iso_with_labels.csv','r'))
-output_layer3_100_30_10 = csv.reader(open('models/10layer10_100_large/output.csv','r'))
-output_layer4_200_100_30_10 = csv.reader(open('models/10layer4_100_100_100_100/output.csv','r'))
-output_layer11 = csv.reader(open('models/layer11/output.csv','r'))
+models = ["veto_layer2_400_100", "veto_layer2_800_800", "veto_cnn_layer2_1600_400"]
+names = ["dnn_400_100", "dnn_800_800", "cnn_1600_400"]
+
+output_relIso = csv.reader(open('data/veto/rel_iso_with_labels.csv','r'))
+output_model0 = csv.reader(open('models/'+models[0]+'/output.csv','r'))
+output_model1 = csv.reader(open('models/'+models[1]+'/output.csv','r'))
+output_model2 = csv.reader(open('models/'+models[2]+'/output.csv','r'))
 
 value_sig = [[],[],[],[]]
 value_bkg = [[],[],[],[]]
 
 value_sig[0], value_bkg[0] = split_data( output_relIso )
-value_sig[1], value_bkg[1] = split_data( output_layer3_100_30_10 )
-value_sig[2], value_bkg[2] = split_data( output_layer4_200_100_30_10 )
-value_sig[3], value_bkg[3] = split_data( output_layer11 )
+value_sig[1], value_bkg[1] = split_data( output_model0 )
+value_sig[2], value_bkg[2] = split_data( output_model1 )
+value_sig[3], value_bkg[3] = split_data( output_model2)
 
-num_bins = 2000
-num_bins_rel = 250
-num_bins_layer11 = 2000
+num_bins = 1000
+num_bins_rel = 100
+num_bins_layer11 = 1000
 sig_eff = [[],[],[],[]]
 bkg_eff = [[],[],[],[]]
 
 # the histogram of the data
-sn0, bn0 = plot( value_sig[0], value_bkg[0], num_bins_rel, 0.0, 1.0, "Relative Isolation", "output_relIso")
-sn1, bn1 = plot( value_sig[1], value_bkg[1], num_bins, 0.0, 1.0, "DNN output", "output_layer3_100_30_10")
-sn2, bn2 = plot( value_sig[2], value_bkg[2], num_bins, 0.0, 1.0, "DNN output", "output_layer4_200_100_30_10")
-sn3, bn3 = plot( value_sig[3], value_bkg[3], num_bins_layer11, 0.0, 1.0, "DNN output", "output_layer11")
+sn0, bn0 = plot( value_sig[0], value_bkg[0], num_bins_rel, 0.0, 1.0, "Relative Isolation", "RelIso")
+sn1, bn1 = plot( value_sig[1], value_bkg[1], num_bins, 0.0, 1.0, "DNN output", models[0])
+sn2, bn2 = plot( value_sig[2], value_bkg[2], num_bins, 0.0, 1.0, "DNN output", models[1])
+sn3, bn3 = plot( value_sig[3], value_bkg[3], num_bins_layer11, 0.0, 1.0, "DNN output", models[2])
 
 fig, ax = plt.subplots()
 
 # Efficiency
 #traditional isolation : signal area should be smaller than threshold
-for i in range(0,7):
+for i in range(0,50):
   sig_eff[0].append(sum(sn0[0:i]) / sum(sn0[0:num_bins_rel]))
   bkg_eff[0].append(sum(bn0[0:i]) / sum(bn0[0:num_bins_rel]))
 
 print "debug = ", sig_eff[0], bkg_eff[0]
 
 #deep isolation : signal area should be above than threshold
-for i in range(200,2001):
+for i in range(100,1001):
   sig_eff[1].append(sum(sn1[i:num_bins]) / sum(sn1[0:num_bins]))
   bkg_eff[1].append(sum(bn1[i:num_bins]) / sum(bn1[0:num_bins]))
   sig_eff[2].append(sum(sn2[i:num_bins]) / sum(sn2[0:num_bins]))
@@ -89,13 +92,13 @@ for i in range(200,2001):
       bkg_eff[3].append(sum(bn3[i:num_bins_layer11]) / sum(bn3[0:num_bins_layer11]))
 
 ax = plt.plot(bkg_eff[0], sig_eff[0], label='Relative Iso')
-ax = plt.plot(bkg_eff[1], sig_eff[1], label='Deep Iso (Res10layer10)')
-ax = plt.plot(bkg_eff[2], sig_eff[2], label='Deep Iso (Res10layer4)')
-ax = plt.plot(bkg_eff[3], sig_eff[3], label='Deep Iso (Res20layer11)')
+ax = plt.plot(bkg_eff[1], sig_eff[1], label=names[0])
+ax = plt.plot(bkg_eff[2], sig_eff[2], label=names[1])
+ax = plt.plot(bkg_eff[3], sig_eff[3], label=names[2])
 
 plt.ylabel("Signal efficiency (%)")
 plt.xlabel("Background efficiency (%)")
 plt.legend(loc='center right')
-plt.savefig("rocs_with_RelIso.pdf")
+plt.savefig("models/rocs_with_RelIso.pdf")
 plt.show()
 

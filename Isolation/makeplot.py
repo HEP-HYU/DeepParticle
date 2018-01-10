@@ -17,7 +17,9 @@ def split_data( data ):
 
   return tmp_sig, tmp_bkg
 
-output = csv.reader(open('rel_iso_with_labels.csv','r'))
+Trad = False
+model_output_name = 'veto_layer3_800_800_800'
+output = csv.reader(open('models/'+ model_output_name+'/output.csv','r'))
 value_sig = []
 value_bkg = []
 value_sig, value_bkg = split_data( output )
@@ -47,16 +49,15 @@ fig.tight_layout()
 plt.legend(loc='upper right')
 plt.show()
 
-fig.savefig("output.pdf")
+fig.savefig('models/'+ model_output_name+'/output.pdf')
 
 # Efficiency
-Trad = True
 if Trad:
   for i in range(0,50):
     sig_eff.append(sum(sn[0:i]) / sum(sn[0:num_bins]))
     bkg_eff.append(sum(bn[0:i]) / sum(bn[0:num_bins]))
 else:
-  for i in range(50,64):
+  for i in range(10,100):
     sig_eff.append(sum(sn[i:num_bins]) / sum(sn[0:num_bins]))
     bkg_eff.append(sum(bn[i:num_bins]) / sum(bn[0:num_bins]))
 
@@ -64,6 +65,6 @@ ax = plt.plot(bkg_eff, sig_eff, label='Deep Iso')
 plt.ylabel("Signal efficiency (%)")
 plt.xlabel("Background efficiency (%)")
 plt.legend(loc='center right')
-plt.savefig("roc.pdf")
+plt.savefig('models/'+ model_output_name+'/roc.pdf')
 plt.show()
 
