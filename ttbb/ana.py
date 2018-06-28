@@ -53,32 +53,35 @@ sess = tf.InteractiveSession()
 x = tf.placeholder(tf.float32, shape=[None, 33]) #20x20
 y_ = tf.placeholder(tf.float32, shape=[None, 1])
 
-W1 = weight_variable( [33,200] )
-b1 = bias_variable( [200] )
+W1 = weight_variable( [33,300] )
+b1 = bias_variable( [300] )
 A1 = tf.nn.relu(tf.matmul(x, W1) + b1)
-W2 = weight_variable( [200,200] )
-b2 = bias_variable( [200] )
+W2 = weight_variable( [300,300] )
+b2 = bias_variable( [300] )
 A2 = tf.nn.relu(tf.matmul(A1, W2) + b2)
-W3 = weight_variable( [200,200] )
-b3 = bias_variable( [200] )
+W3 = weight_variable( [300,300] )
+b3 = bias_variable( [300] )
 A3 = tf.nn.relu(tf.matmul(A2, W3) + b3)
-W4 = weight_variable( [200,200] )
-b4 = bias_variable( [200] )
+W4 = weight_variable( [300,300] )
+b4 = bias_variable( [300] )
 A4 = tf.nn.relu(tf.matmul(A3, W4) + b4)
-W5 = weight_variable( [200,200] )
-b5 = bias_variable( [200] )
+W5 = weight_variable( [300,300] )
+b5 = bias_variable( [300] )
 A5 = tf.nn.relu(tf.matmul(A4, W5) + b5)
-W6 = weight_variable( [200,200] )
-b6 = bias_variable( [200] )
+W6 = weight_variable( [300,300] )
+b6 = bias_variable( [300] )
 A6 = tf.nn.relu(tf.matmul(A5, W6) + b6)
-W7 = weight_variable( [200,200] )
-b7 = bias_variable( [200] )
+W7 = weight_variable( [300,300] )
+b7 = bias_variable( [300] )
 A7 = tf.nn.relu(tf.matmul(A6, W7) + b7)
-W8 = weight_variable( [200,200] )
-b8 = bias_variable( [200] )
+W8 = weight_variable( [300,300] )
+b8 = bias_variable( [300] )
 A8 = tf.nn.relu(tf.matmul(A7, W8) + b8)
-W9 = weight_variable( [200,1] )
+W9 = weight_variable( [300,1] )
 b9 = bias_variable( [1] )
+#A9 = tf.nn.relu(tf.matmul(A8, W9) + b9)
+#W10 = weight_variable( [300,1] )
+#b10 = bias_variable( [1] )
 y = tf.matmul(A8,W9) + b9
 
 cross_entropy = tf.reduce_mean(
@@ -94,7 +97,7 @@ cur_id_n = 0
 epoch = 0
 
 saver = tf.train.Saver()
-model_output_name = "33v_200n_layer_9"
+model_output_name = "33v_300n_layer_9"
 
 tmpout=''
 with tf.Session() as sess:
@@ -155,6 +158,14 @@ with tf.Session() as sess:
   lb2Eta = array( 'd', [0] )
   lb2Phi = array( 'd', [0] )
   lb2Mass = array( 'd', [0] )
+  lb1nuPt = array( 'd', [0] )
+  lb1nuEta = array( 'd', [0] )
+  lb1nuPhi = array( 'd', [0] )
+  lb1nuMass = array( 'd', [0] )
+  lb2nuPt = array( 'd', [0] )
+  lb2nuEta = array( 'd', [0] )
+  lb2nuPhi = array( 'd', [0] )
+  lb2nuMass = array( 'd', [0] )
   diPt = array( 'd', [0] )
   diEta = array( 'd', [0] )
   diPhi = array( 'd', [0] )
@@ -190,6 +201,14 @@ with tf.Session() as sess:
   t.Branch('lb2Eta', lb2Eta, 'lb2Eta/D')
   t.Branch('lb2Phi', lb2Phi, 'lb2Phi/D')
   t.Branch('lb2Mass', lb2Mass, 'lb2Mass/D')
+  t.Branch('lb1nuPt', lb1nuPt, 'lb1nuPt/D')
+  t.Branch('lb1nuEta', lb1nuEta, 'lb1nuEta/D')
+  t.Branch('lb1nuPhi', lb1nuPhi, 'lb1nuPhi/D')
+  t.Branch('lb1nuMass', lb1nuMass, 'lb1nuMass/D')
+  t.Branch('lb2nuPt', lb2nuPt, 'lb2nuPt/D')
+  t.Branch('lb2nuEta', lb2nuEta, 'lb2nuEta/D')
+  t.Branch('lb2nuPhi', lb2nuPhi, 'lb2nuPhi/D')
+  t.Branch('lb2nuMass', lb2nuMass, 'lb2nuMass/D')
   t.Branch('diPt', diPt, 'diPt/D')
   t.Branch('diEta', diEta, 'diEta/D')
   t.Branch('diPhi', diPhi, 'diPhi/D')
@@ -204,8 +223,20 @@ with tf.Session() as sess:
   t.Branch('phi2', phi2, 'phi2/D')
   t.Branch('e1', e1, 'e1/D')
   t.Branch('e2', e2, 'e2/D')
+  
+  # Create the output file. 
+  f_hist = ROOT.TFile("hist_ttbb.root", "recreate")
+  f_hist.cd()
+  edgesfordR = [0.4, 0.7, 1.0, 2.0, 4.0]
+  edgesforMass = [0, 60, 110, 170, 400]
+  h_dR_ch0 = ROOT.TH1F('h_dR_ch0','dR between two addtional b jets', 4, array('d',edgesfordR) )
+  h_Mass_ch0 = ROOT.TH1F('h_Mass_ch0','Invariant mass of two addtional b jets', 4, array('d',edgesforMass))
+  h_dR_ch1 = ROOT.TH1F('h_dR_ch1','dR between two addtional b jets', 4, array('d',edgesfordR) )
+  h_Mass_ch1 = ROOT.TH1F('h_Mass_ch1','Invariant mass of two addtional b jets', 4, array('d',edgesforMass))
    
   entries = chain.GetEntries() 
+
+  jetindex = open("jetindex.txt", 'w')
 
   nEvents = 0
   nEvents_match = 0
@@ -280,6 +311,14 @@ with tf.Session() as sess:
           lb2Eta[0] = (b2+lep).Eta()
           lb2Phi[0] = (b2+lep).Phi()
           lb2Mass[0] = (b2+lep).M()
+          lb1nuPt[0] = (b1+lep+nu).Pt()
+          lb1nuEta[0] = (b1+lep+nu).Eta()
+          lb1nuPhi[0] = (b1+lep+nu).Phi()
+          lb1nuMass[0] = (b1+lep+nu).M()
+          lb2nuPt[0] = (b2+lep+nu).Pt()
+          lb2nuEta[0] = (b2+lep+nu).Eta()
+          lb2nuPhi[0] = (b2+lep+nu).Phi()
+          lb2nuMass[0] = (b2+lep+nu).M()
           diPt[0] = (b1+b2).Pt()
           diEta[0] = (b1+b2).Eta()
           diPhi[0] = (b1+b2).Phi()
@@ -314,6 +353,14 @@ with tf.Session() as sess:
           data.append(lb2Eta[0])
           data.append(lb2Phi[0])
           data.append(lb2Mass[0])
+          #data.append(lb1nuPt[0])
+          #data.append(lb1nuEta[0])
+          #data.append(lb1nuPhi[0])
+          #data.append(lb1nuMass[0])
+          #data.append(lb2nuPt[0])
+          #data.append(lb2nuEta[0])
+          #data.append(lb2nuPhi[0])
+          #data.append(lb2nuMass[0])
           data.append(diPt[0])
           data.append(diEta[0])
           data.append(diPhi[0])
@@ -361,6 +408,21 @@ with tf.Session() as sess:
     addbjet1_reco.SetPtEtaPhiE( chain.jet_pT[ sel[maxval][0] ], chain.jet_eta[ sel[maxval][0] ], chain.jet_phi[ sel[maxval][0] ], chain.jet_E[ sel[maxval][0] ])  
     addbjet2_reco.SetPtEtaPhiE( chain.jet_pT[ sel[maxval][1] ], chain.jet_eta[ sel[maxval][1] ], chain.jet_phi[ sel[maxval][1] ], chain.jet_E[ sel[maxval][1] ])  
 
+    dibdR = addbjet1_reco.DeltaR( addbjet2_reco )
+    dibMass = ( addbjet1_reco + addbjet2_reco).M()
+
+    if chain.channel == 0:
+      h_dR_ch0.Fill( dibdR )
+      h_Mass_ch0.Fill(dibMass)
+    elif chain.channel == 1:
+      h_dR_ch1.Fill( dibdR )
+      h_Mass_ch1.Fill(dibMass)
+    else:
+      print "error!"
+
+    #f_hist.Write(h_dR)
+    #f_hist.Write(h_Mass) 
+
     addbjet1 = TLorentzVector()
     addbjet2 = TLorentzVector() 
     addbjet1.SetPtEtaPhiE( chain.addbjet1_pt, chain.addbjet1_eta, chain.addbjet1_phi, chain.addbjet1_e) 
@@ -376,7 +438,15 @@ with tf.Session() as sess:
     #print match1 , " ", match2
     if nEvents%1000 == 0:
       print "nEvents = ", nEvents, "nEvents_match = ", nEvents_match 
-  
+    c = str(chain.event) + ' , ' + str(sel[maxval][0]) + ' , ' +  str(sel[maxval][1]) + '\n'
+    print c
+    jetindex.write( c )
+
+  f_hist.Write()
+  f_hist.cd()
+  f_hist.Close()
+
+  jetindex.close()
   f.Write()
   f.Close()
   match_rate = nEvents_match / nEvents
