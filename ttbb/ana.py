@@ -132,6 +132,8 @@ with tf.Session() as sess:
       val_y = pred[i]
       writer.writerows( zip(val_y,val_x) )
 
+  genchain = TChain("ttbbLepJets/gentree");
+  genchain.Add("TT_powheg_ttbb.root")
   chain = TChain("ttbbLepJets/tree");
   chain.Add("TT_powheg_ttbb.root")
 
@@ -229,17 +231,59 @@ with tf.Session() as sess:
   f_hist.cd()
   edgesfordR = [0.4, 0.7, 1.0, 2.0, 4.0]
   edgesforMass = [0, 60, 110, 170, 400]
+
   h_dR_ch0 = ROOT.TH1F('h_dR_ch0','dR between two addtional b jets', 4, array('d',edgesfordR) )
   h_Mass_ch0 = ROOT.TH1F('h_Mass_ch0','Invariant mass of two addtional b jets', 4, array('d',edgesforMass))
   h_dR_ch1 = ROOT.TH1F('h_dR_ch1','dR between two addtional b jets', 4, array('d',edgesfordR) )
   h_Mass_ch1 = ROOT.TH1F('h_Mass_ch1','Invariant mass of two addtional b jets', 4, array('d',edgesforMass))
-   
+  
+  h_dR_dR_ch0 = ROOT.TH1F('h_dR_dR_ch0','dR between two addtional b jets', 4, array('d',edgesfordR) )
+  h_Mass_dR_ch0 = ROOT.TH1F('h_Mass_dR_ch0','Invariant mass of two addtional b jets', 4, array('d',edgesforMass))
+  h_dR_dR_ch1 = ROOT.TH1F('h_dR_dR_ch1','dR between two addtional b jets', 4, array('d',edgesfordR) )
+  h_Mass_dR_ch1 = ROOT.TH1F('h_Mass_dR_ch1','Invariant mass of two addtional b jets', 4, array('d',edgesforMass))
+
+  h_dR_Gen_Den = ROOT.TH1F('h_dR_Gen_Den','dR between two addtional b jets', 4, array('d',edgesfordR) )
+  h_Mass_Gen_Den = ROOT.TH1F('h_Mass_Gen_Den','Invariant mass of two addtional b jets', 4, array('d',edgesforMass))
+
+  h_dR_Gen_ch0 = ROOT.TH1F('h_dR_Gen_ch0','dR between two addtional b jets', 4, array('d',edgesfordR) )
+  h_Mass_Gen_ch0 = ROOT.TH1F('h_Mass_Gen_ch0','Invariant mass of two addtional b jets', 4, array('d',edgesforMass))
+  h_dR_Gen_ch1 = ROOT.TH1F('h_dR_Gen_ch1','dR between two addtional b jets', 4, array('d',edgesfordR) )
+  h_Mass_Gen_ch1 = ROOT.TH1F('h_Mass_Gen_ch1','Invariant mass of two addtional b jets', 4, array('d',edgesforMass))
+ 
+  h_dR_fine_Gen_ch0 = ROOT.TH1F('h_dR_fine_Gen_ch0','dR between two addtional b jets', 20, 0, 5 )
+  h_Mass_fine_Gen_ch0 = ROOT.TH1F('h_Mass_fine_Gen_ch0','Invariant mass of two addtional b jets', 40, 0, 400)
+  h_dR_fine_Gen_ch1 = ROOT.TH1F('h_dR_fine_Gen_ch1','dR between two addtional b jets', 20, 0, 5)
+  h_Mass_fine_Gen_ch1 = ROOT.TH1F('h_Mass_fine_Gen_ch1','Invariant mass of two addtional b jets', 40, 0, 400)
+
+  h2_dR_Response_ch0 = ROOT.TH2F('h2_dR_Response_ch0','dR between two addtional b jets', 4, array('d',edgesfordR), 4, array('d',edgesfordR))
+  h2_Mass_Response_ch0 = ROOT.TH2F('h2_Mass_Response_ch0','Invariant mass of two addtional b jets', 4, array('d',edgesforMass), 4, array('d',edgesforMass) )
+  h2_dR_Response_ch1 = ROOT.TH2F('h2_dR_Response_ch1','dR between two addtional b jets', 4, array('d',edgesfordR), 4, array('d',edgesfordR) )
+  h2_Mass_Response_ch1 = ROOT.TH2F('h2_Mass_Response_ch1','Invariant mass of two addtional b jets', 4, array('d',edgesforMass), 4, array('d',edgesforMass)) 
+  
+  genentries = genchain.GetEntries()
+  for i in xrange(genentries):
+    genchain.GetEntry(i)
+
+    addbjet1 = TLorentzVector()
+    addbjet2 = TLorentzVector()
+    addbjet1.SetPtEtaPhiE( genchain.addbjet1_pt, genchain.addbjet1_eta, genchain.addbjet1_phi, genchain.addbjet1_e)
+    addbjet2.SetPtEtaPhiE( genchain.addbjet2_pt, genchain.addbjet2_eta, genchain.addbjet2_phi, genchain.addbjet2_e)
+
+    dibdR_Gen = addbjet1.DeltaR( addbjet2 )
+    dibMass_Gen = (addbjet1 + addbjet2).M()
+  
+    h_dR_Gen_Den.Fill(dibdR_Gen)
+    h_Mass_Gen_Den.Fill(dibMass_Gen)
+
+
+ 
   entries = chain.GetEntries() 
 
   jetindex = open("jetindex.txt", 'w')
 
   nEvents = 0
   nEvents_match = 0
+  nEvents_match_dR = 0
 
   for i in xrange(entries):
     chain.GetEntry(i)
@@ -282,11 +326,12 @@ with tf.Session() as sess:
         if addbjet2.DeltaR( tmp ) < 0.4:
           addbjet2_matched = tmp;
 
+    small_dR = 999
     test_data = []
     sel = []
+    indexSmalldR = []
     for j in range( len(chain.jet_pT) - 1):
       for k in range( j+1, len(chain.jet_pT) ):
-      
         if chain.jet_CSV[j] > 0.9535 and chain.jet_CSV[k] > 0.9535:
           b1 = TLorentzVector()
           b2 = TLorentzVector()
@@ -380,6 +425,9 @@ with tf.Session() as sess:
           tmp.append(j)
           tmp.append(k)
           sel.append(tmp)
+          if dR[0] < small_dR:
+            small_dR = dR[0]
+            indexSmalldR = tmp
 
           if ( addbjet1_matched.DeltaR( b1 ) == 0 and addbjet2_matched.DeltaR( b2 ) ==0 ) or ( addbjet2_matched.DeltaR( b1) == 0  and addbjet1_matched.DeltaR( b2) == 0 ):
             signal[0] = 1
@@ -402,7 +450,7 @@ with tf.Session() as sess:
 
     maxval = pred.argmax()
 
-    #print sel
+    #print sel from DNN
     addbjet1_reco = TLorentzVector()
     addbjet2_reco = TLorentzVector()
     addbjet1_reco.SetPtEtaPhiE( chain.jet_pT[ sel[maxval][0] ], chain.jet_eta[ sel[maxval][0] ], chain.jet_phi[ sel[maxval][0] ], chain.jet_E[ sel[maxval][0] ])  
@@ -411,35 +459,69 @@ with tf.Session() as sess:
     dibdR = addbjet1_reco.DeltaR( addbjet2_reco )
     dibMass = ( addbjet1_reco + addbjet2_reco).M()
 
+    addbjet1_reco_dR = TLorentzVector()
+    addbjet2_reco_dR = TLorentzVector()
+    addbjet1_reco_dR.SetPtEtaPhiE( chain.jet_pT[ indexSmalldR[0] ], chain.jet_eta[ indexSmalldR[0] ], chain.jet_phi[ indexSmalldR[0] ], chain.jet_E[ indexSmalldR[0] ])
+    addbjet2_reco_dR.SetPtEtaPhiE( chain.jet_pT[ indexSmalldR[1] ], chain.jet_eta[ indexSmalldR[1] ], chain.jet_phi[ indexSmalldR[1] ], chain.jet_E[ indexSmalldR[1] ])
+
+    dibdR_dR = addbjet1_reco_dR.DeltaR( addbjet2_reco_dR )
+    dibMass_dR = ( addbjet1_reco_dR + addbjet2_reco_dR).M()
+
+    addbjet1 = TLorentzVector()
+    addbjet2 = TLorentzVector()
+    addbjet1.SetPtEtaPhiE( chain.addbjet1_pt, chain.addbjet1_eta, chain.addbjet1_phi, chain.addbjet1_e)
+    addbjet2.SetPtEtaPhiE( chain.addbjet2_pt, chain.addbjet2_eta, chain.addbjet2_phi, chain.addbjet2_e)
+
+    dibdR_Gen = addbjet1.DeltaR( addbjet2 )
+    dibMass_Gen = (addbjet1 + addbjet2).M()
+
     if chain.channel == 0:
       h_dR_ch0.Fill( dibdR )
       h_Mass_ch0.Fill(dibMass)
+      h_dR_dR_ch0.Fill( dibdR_dR )
+      h_Mass_dR_ch0.Fill(dibMass_dR)
+      h_dR_Gen_ch0.Fill( dibdR_Gen )
+      h_Mass_Gen_ch0.Fill(dibMass_Gen)
+      h_dR_fine_Gen_ch0.Fill( dibdR_Gen )
+      h_Mass_fine_Gen_ch0.Fill(dibMass_Gen)
+      h2_dR_Response_ch0.Fill( dibdR, dibdR_Gen )
+      h2_Mass_Response_ch0.Fill( dibMass,  dibMass_Gen)
     elif chain.channel == 1:
       h_dR_ch1.Fill( dibdR )
       h_Mass_ch1.Fill(dibMass)
+      h_dR_dR_ch1.Fill( dibdR )
+      h_Mass_dR_ch1.Fill(dibMass)
+      h_dR_Gen_ch1.Fill( dibdR_Gen )
+      h_Mass_Gen_ch1.Fill(dibMass_Gen)
+      h_dR_fine_Gen_ch1.Fill( dibdR_Gen )
+      h_Mass_fine_Gen_ch1.Fill(dibMass_Gen)
+      h2_dR_Response_ch1.Fill( dibdR, dibdR_Gen )
+      h2_Mass_Response_ch1.Fill( dibMass,  dibMass_Gen)
     else:
-      print "error!"
+      print "Error!"
 
     #f_hist.Write(h_dR)
     #f_hist.Write(h_Mass) 
 
-    addbjet1 = TLorentzVector()
-    addbjet2 = TLorentzVector() 
-    addbjet1.SetPtEtaPhiE( chain.addbjet1_pt, chain.addbjet1_eta, chain.addbjet1_phi, chain.addbjet1_e) 
-    addbjet2.SetPtEtaPhiE( chain.addbjet2_pt, chain.addbjet2_eta, chain.addbjet2_phi, chain.addbjet2_e)
-
     match1 = addbjet1_reco.DeltaR( addbjet1 ) < 0.5 or addbjet1_reco.DeltaR( addbjet2 )  < 0.5 
     match2 = addbjet2_reco.DeltaR( addbjet1 ) < 0.5 or addbjet2_reco.DeltaR( addbjet2 )  < 0.5 
+
+    match1_dR = addbjet1_reco_dR.DeltaR( addbjet1 ) < 0.5 or addbjet1_reco_dR.DeltaR( addbjet2 )  < 0.5
+    match2_dR = addbjet2_reco_dR.DeltaR( addbjet1 ) < 0.5 or addbjet2_reco_dR.DeltaR( addbjet2 )  < 0.5
 
     nEvents = nEvents + 1
     if match1 and match2:
       nEvents_match = nEvents_match + 1   
+    if match1_dR and match2_dR:
+      nEvents_match_dR = nEvents_match_dR + 1
+    
 
     #print match1 , " ", match2
     if nEvents%1000 == 0:
-      print "nEvents = ", nEvents, "nEvents_match = ", nEvents_match 
+      print "nEvents (DNN) = ", nEvents, "nEvents_match = ", nEvents_match 
+      print "nEvents (dR)  = ", nEvents, "nEvents_match = ", nEvents_match_dR 
     c = str(chain.event) + ' , ' + str(sel[maxval][0]) + ' , ' +  str(sel[maxval][1]) + '\n'
-    print c
+    #print c
     jetindex.write( c )
 
   f_hist.Write()
@@ -450,7 +532,8 @@ with tf.Session() as sess:
   f.Write()
   f.Close()
   match_rate = nEvents_match / nEvents
-  print match_rate
+  match_rate_dR = nEvents_match_dR / nEvents
+  print "matching rate from DNN = " , match_rate , "matching rate from dR =",  match_rate_dR
 
 timer.Stop()
 rtime = timer.RealTime(); # Real time (or "wall time")
