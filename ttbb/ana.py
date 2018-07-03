@@ -1,8 +1,12 @@
 from __future__ import division
+import sys, os
+import google.protobuf
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 import numpy as np
 import csv
 from sklearn.utils import shuffle
-import os
 import re
 import string
 import math
@@ -229,8 +233,8 @@ with tf.Session() as sess:
   # Create the output file. 
   f_hist = ROOT.TFile("hist_ttbb.root", "recreate")
   f_hist.cd()
-  edgesfordR = [0.4, 0.7, 1.0, 2.0, 4.0]
-  edgesforMass = [0, 60, 110, 170, 400]
+  edgesfordR = [0.4, 0.6, 1.0, 2.0, 4.0]
+  edgesforMass = [0, 60, 100, 170, 400]
 
   h_dR_ch0 = ROOT.TH1F('h_dR_ch0','dR between two addtional b jets', 4, array('d',edgesfordR) )
   h_Mass_ch0 = ROOT.TH1F('h_Mass_ch0','Invariant mass of two addtional b jets', 4, array('d',edgesforMass))
@@ -272,8 +276,8 @@ with tf.Session() as sess:
     dibdR_Gen = addbjet1.DeltaR( addbjet2 )
     dibMass_Gen = (addbjet1 + addbjet2).M()
   
-    h_dR_Gen_Den.Fill(dibdR_Gen)
-    h_Mass_Gen_Den.Fill(dibMass_Gen)
+    h_dR_Gen_Den.Fill(dibdR_Gen, genchain.genweight)
+    h_Mass_Gen_Den.Fill(dibMass_Gen, genchain.genweight)
 
 
  
@@ -287,12 +291,19 @@ with tf.Session() as sess:
 
   for i in xrange(entries):
     chain.GetEntry(i)
+
+    eventweight = chain.PUWeight[0]*chain.genweight*chain.lepton_SF[0]*chain.jet_SF_CSV[0]
+
     MET_px = chain.MET * math.cos( chain.MET_phi )
     MET_py = chain.MET * math.sin( chain.MET_phi )
     nu = TLorentzVector( MET_px, MET_py, 0, chain.MET)
     lep = TLorentzVector() 
     lep.SetPtEtaPhiE( chain.lepton_pT, chain.lepton_eta, chain.lepton_phi, chain.lepton_E)
-    if chain.lepton_pT < 20 or chain.lepton_isIso == 0:
+    passmu = False
+    passel = False
+    passmu = chain.channel == 0 and lep.Pt() > 30 and abs(lep.Eta()) < 2.1
+    passel = chain.channel == 1 and lep.Pt() > 35 and abs(lep.Eta()) < 2.1
+    if passmu == False and passel == False:
       continue
 
     addbjet1 = TLorentzVector()
@@ -306,7 +317,10 @@ with tf.Session() as sess:
     njets = 0
     nbjets = 0 
     for j in range( len(chain.jet_pT) ):
-      if chain.jet_pT[j] < 20 or chain.jet_eta[j] > 2.5 or chain.jet_eta[j] < -2.5 :
+      jet = TLorentzVector()
+      jet.SetPtEtaPhiE(chain.jet_pT[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_E[j])
+      jet *= chain.jet_JER_Nom[j]
+      if jet.Pt() < 30 or abs(jet.Eta()) > 2.4 :
         continue
       njets = njets + 1
       if chain.jet_CSV[j] > 0.9535:
@@ -476,27 +490,27 @@ with tf.Session() as sess:
     dibMass_Gen = (addbjet1 + addbjet2).M()
 
     if chain.channel == 0:
-      h_dR_ch0.Fill( dibdR )
-      h_Mass_ch0.Fill(dibMass)
-      h_dR_dR_ch0.Fill( dibdR_dR )
-      h_Mass_dR_ch0.Fill(dibMass_dR)
-      h_dR_Gen_ch0.Fill( dibdR_Gen )
-      h_Mass_Gen_ch0.Fill(dibMass_Gen)
-      h_dR_fine_Gen_ch0.Fill( dibdR_Gen )
-      h_Mass_fine_Gen_ch0.Fill(dibMass_Gen)
-      h2_dR_Response_ch0.Fill( dibdR, dibdR_Gen )
-      h2_Mass_Response_ch0.Fill( dibMass,  dibMass_Gen)
+      h_dR_ch0.Fill( dibdR, eventweight )
+      h_Mass_ch0.Fill(dibMass, eventweight)
+      h_dR_dR_ch0.Fill( dibdR_dR, eventweight)
+      h_Mass_dR_ch0.Fill(dibMass_dR, eventweight)
+      h_dR_Gen_ch0.Fill( dibdR_Gen, eventweight )
+      h_Mass_Gen_ch0.Fill(dibMass_Gen, eventweight)
+      h_dR_fine_Gen_ch0.Fill( dibdR_Gen, eventweight )
+      h_Mass_fine_Gen_ch0.Fill(dibMass_Gen, eventweight)
+      h2_dR_Response_ch0.Fill( dibdR, dibdR_Gen, eventweight )
+      h2_Mass_Response_ch0.Fill( dibMass,  dibMass_Gen, eventweight)
     elif chain.channel == 1:
-      h_dR_ch1.Fill( dibdR )
-      h_Mass_ch1.Fill(dibMass)
-      h_dR_dR_ch1.Fill( dibdR )
-      h_Mass_dR_ch1.Fill(dibMass)
-      h_dR_Gen_ch1.Fill( dibdR_Gen )
-      h_Mass_Gen_ch1.Fill(dibMass_Gen)
-      h_dR_fine_Gen_ch1.Fill( dibdR_Gen )
-      h_Mass_fine_Gen_ch1.Fill(dibMass_Gen)
-      h2_dR_Response_ch1.Fill( dibdR, dibdR_Gen )
-      h2_Mass_Response_ch1.Fill( dibMass,  dibMass_Gen)
+      h_dR_ch1.Fill( dibdR, eventweight )
+      h_Mass_ch1.Fill(dibMass, eventweight)
+      h_dR_dR_ch1.Fill( dibdR, eventweight )
+      h_Mass_dR_ch1.Fill(dibMass, eventweight)
+      h_dR_Gen_ch1.Fill( dibdR_Gen, eventweight )
+      h_Mass_Gen_ch1.Fill(dibMass_Gen, eventweight)
+      h_dR_fine_Gen_ch1.Fill( dibdR_Gen, eventweight )
+      h_Mass_fine_Gen_ch1.Fill(dibMass_Gen, eventweight)
+      h2_dR_Response_ch1.Fill( dibdR, dibdR_Gen, eventweight )
+      h2_Mass_Response_ch1.Fill( dibMass,  dibMass_Gen, eventweight)
     else:
       print "Error!"
 
