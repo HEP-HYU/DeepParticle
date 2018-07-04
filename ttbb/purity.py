@@ -80,7 +80,7 @@ def GetPurityStability( h2_dR_Response_ch0 , channel):
   h_purity_dR_ch0.SetStats(0)
   h_purity_dR_ch0.GetXaxis().SetTitle("dR between two add. b jets")
   h_purity_dR_ch0.GetYaxis().SetTitle("Purity")
-  h_purity_dR_ch0.Draw()
+  h_purity_dR_ch0.Draw("hist")
   c_purity_dR_ch0.Print( ('c_purity_dR_%s.pdf' % channel) )
 
   c_stability_dR_ch0 = TCanvas( ('c_stability_dR_%s'%channel),"c_stability_dR_ch0",1)
@@ -88,7 +88,7 @@ def GetPurityStability( h2_dR_Response_ch0 , channel):
   h_stability_dR_ch0.SetStats(0)
   h_stability_dR_ch0.GetXaxis().SetTitle("dR between two add. b jets")
   h_stability_dR_ch0.GetYaxis().SetTitle("Stability") 
-  h_stability_dR_ch0.Draw()
+  h_stability_dR_ch0.Draw("hist")
   c_stability_dR_ch0.Print( ('c_stability_dR_%s.pdf' % channel) )
 
   c_purity_Mass_ch0 = TCanvas( ('c_purity_Mass_%s'%channel),"c_purity_Mass_ch0",1)
@@ -96,7 +96,7 @@ def GetPurityStability( h2_dR_Response_ch0 , channel):
   h_purity_Mass_ch0.SetStats(0)
   h_purity_Mass_ch0.GetXaxis().SetTitle("Invariant mass (GeV)")
   h_purity_Mass_ch0.GetYaxis().SetTitle("Purity")
-  h_purity_Mass_ch0.Draw()
+  h_purity_Mass_ch0.Draw("hist")
   c_purity_Mass_ch0.Print( ('c_purity_Mass_%s.pdf' % channel) )
 
   c_stability_Mass_ch0 = TCanvas( ('c_stability_Mass_%s'%channel),"c_stability_Mass_ch0",1)
@@ -104,7 +104,7 @@ def GetPurityStability( h2_dR_Response_ch0 , channel):
   h_stability_Mass_ch0.SetStats(0)
   h_stability_Mass_ch0.GetXaxis().SetTitle("Invariant mass (GeV)")
   h_stability_Mass_ch0.GetYaxis().SetTitle("Stability")
-  h_stability_Mass_ch0.Draw()
+  h_stability_Mass_ch0.Draw("hist")
   c_stability_Mass_ch0.Print( ('c_stability_Mass_%s.pdf' % channel) )
 
   c_dR_Response_ch0 = TCanvas( ('c_dR_Response_%s'%channel),"c_dR_Response_ch0",1)
@@ -127,28 +127,28 @@ def GetPurityStability( h2_dR_Response_ch0 , channel):
   h_dR_ch0_Reco.SetTitle("")
   h_dR_ch0_Reco.SetStats(0)
   h_dR_ch0_Reco.GetXaxis().SetTitle("Reco. dR")
-  h_dR_ch0_Reco.Draw()
+  h_dR_ch0_Reco.Draw("hist")
   c_dR_ch0_Reco.Print( ('c_dR_%s_Reco.pdf'%channel) )
 
   c_dR_ch0_Gen = TCanvas( ('c_dR_%s_Gen'%channel), "c_dR_ch0_Gen", 2)
   h_dR_ch0_Gen.SetTitle("")
   h_dR_ch0_Gen.SetStats(0)
   h_dR_ch0_Gen.GetXaxis().SetTitle("Gen. dR")
-  h_dR_ch0_Gen.Draw()
+  h_dR_ch0_Gen.Draw("hist")
   c_dR_ch0_Gen.Print( ('c_dR_%s_Gen.pdf'%channel) )
 
   c_Mass_ch0_Reco = TCanvas( ('c_Mass_%s_Reco'%channel), "c_Mass_ch0_Reco", 2)
   h_Mass_ch0_Reco.SetTitle("")
   h_Mass_ch0_Reco.SetStats(0)
   h_Mass_ch0_Reco.GetXaxis().SetTitle("Reco. Mass (GeV)")
-  h_Mass_ch0_Reco.Draw()
+  h_Mass_ch0_Reco.Draw("hist")
   c_Mass_ch0_Reco.Print( ('c_Mass_%s_Reco.pdf'%channel) )
 
   c_Mass_ch0_Gen = TCanvas( ('c_Mass_%s_Gen'%channel), "c_Mass_ch0_Gen", 2)
   h_Mass_ch0_Gen.SetTitle("")
   h_Mass_ch0_Gen.SetStats(0)
   h_Mass_ch0_Gen.GetXaxis().SetTitle("Gen. Mass (GeV)")
-  h_Mass_ch0_Gen.Draw()
+  h_Mass_ch0_Gen.Draw("hist")
   c_Mass_ch0_Gen.Print( ('c_Mass_%s_Gen.pdf'%channel) )
 
 f = ROOT.TFile("hist_ttbb.root")
