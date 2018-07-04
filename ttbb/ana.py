@@ -323,7 +323,10 @@ with tf.Session() as sess:
       if jet.Pt() < 30 or abs(jet.Eta()) > 2.4 :
         continue
       njets = njets + 1
-      if chain.jet_CSV[j] > 0.9535:
+      btag = 0.9535
+      #btag = 0.8484
+      #btag = 0.54264
+      if chain.jet_CSV[j] > btag:
         nbjets = nbjets+1
 
     if njets < 6:  
@@ -346,7 +349,7 @@ with tf.Session() as sess:
     indexSmalldR = []
     for j in range( len(chain.jet_pT) - 1):
       for k in range( j+1, len(chain.jet_pT) ):
-        if chain.jet_CSV[j] > 0.9535 and chain.jet_CSV[k] > 0.9535:
+        if chain.jet_CSV[j] > btag and chain.jet_CSV[k] > btag:
           b1 = TLorentzVector()
           b2 = TLorentzVector()
           b1.SetPtEtaPhiE( chain.jet_pT[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_E[j]) 
