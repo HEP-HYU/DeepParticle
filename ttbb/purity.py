@@ -1,6 +1,7 @@
 from ROOT import TFile, TTree
 from ROOT import *
 import ROOT
+import math
 
 gROOT.SetStyle("Plain")
 gStyle.SetOptStat(1110)
@@ -53,7 +54,9 @@ def GetPurityStability( h2_dR_Response_ch0 , channel):
     num = h2_dR_Response_ch0.GetBinContent(i+1, i+1)
     purity = num/den
     h_purity_dR_ch0.SetBinContent(i+1, purity)
-
+    h_purity_dR_ch0.SetBinError(i+1, abs(purity)*math.sqrt(pow(math.sqrt(den)/den,2)+pow(math.sqrt(num)/num,2)))
+    
+    print i," ", den," ", num," ", purity
   for i in range( h_stability_dR_ch0.GetNbinsX() ):
     den = h_stability_dR_ch0.GetBinContent(i+1)
     num = h2_dR_Response_ch0.GetBinContent(i+1, i+1)

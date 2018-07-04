@@ -489,31 +489,38 @@ with tf.Session() as sess:
     dibdR_Gen = addbjet1.DeltaR( addbjet2 )
     dibMass_Gen = (addbjet1 + addbjet2).M()
 
-    if chain.channel == 0:
-      h_dR_ch0.Fill( dibdR, eventweight )
-      h_Mass_ch0.Fill(dibMass, eventweight)
-      h_dR_dR_ch0.Fill( dibdR_dR, eventweight)
-      h_Mass_dR_ch0.Fill(dibMass_dR, eventweight)
-      h_dR_Gen_ch0.Fill( dibdR_Gen, eventweight )
-      h_Mass_Gen_ch0.Fill(dibMass_Gen, eventweight)
-      h_dR_fine_Gen_ch0.Fill( dibdR_Gen, eventweight )
-      h_Mass_fine_Gen_ch0.Fill(dibMass_Gen, eventweight)
-      h2_dR_Response_ch0.Fill( dibdR, dibdR_Gen, eventweight )
-      h2_Mass_Response_ch0.Fill( dibMass,  dibMass_Gen, eventweight)
-    elif chain.channel == 1:
-      h_dR_ch1.Fill( dibdR, eventweight )
-      h_Mass_ch1.Fill(dibMass, eventweight)
-      h_dR_dR_ch1.Fill( dibdR, eventweight )
-      h_Mass_dR_ch1.Fill(dibMass, eventweight)
-      h_dR_Gen_ch1.Fill( dibdR_Gen, eventweight )
-      h_Mass_Gen_ch1.Fill(dibMass_Gen, eventweight)
-      h_dR_fine_Gen_ch1.Fill( dibdR_Gen, eventweight )
-      h_Mass_fine_Gen_ch1.Fill(dibMass_Gen, eventweight)
-      h2_dR_Response_ch1.Fill( dibdR, dibdR_Gen, eventweight )
-      h2_Mass_Response_ch1.Fill( dibMass,  dibMass_Gen, eventweight)
+    if i%2 == 0:
+      if chain.channel == 0:
+        h2_dR_Response_ch0.Fill( dibdR, dibdR_Gen, eventweight)
+        h2_Mass_Response_ch0.Fill( dibMass, dibMass_Gen, eventweight)
+      elif chain.channel == 1:
+        h2_dR_Response_ch1.Fill( dibdR, dibdR_Gen, eventweight)
+        h2_Mass_Response_ch1.Fill( dibMass, dibMass_Gen, eventweight)
+      else:
+        print "Error!"
+    elif i%2 == 1:
+      if chain.channel == 0:
+        h_dR_ch0.Fill( dibdR, eventweight )
+	h_Mass_ch0.Fill(dibMass, eventweight)
+	h_dR_dR_ch0.Fill( dibdR_dR, eventweight)
+	h_Mass_dR_ch0.Fill(dibMass_dR, eventweight)
+	h_dR_Gen_ch0.Fill( dibdR_Gen, eventweight )
+	h_Mass_Gen_ch0.Fill(dibMass_Gen, eventweight)
+	h_dR_fine_Gen_ch0.Fill( dibdR_Gen, eventweight )
+	h_Mass_fine_Gen_ch0.Fill(dibMass_Gen, eventweight)
+      elif chain.channel ==1:
+        h_dR_ch1.Fill( dibdR, eventweight )
+	h_Mass_ch1.Fill(dibMass, eventweight)
+	h_dR_dR_ch1.Fill( dibdR, eventweight )
+	h_Mass_dR_ch1.Fill(dibMass, eventweight)
+	h_dR_Gen_ch1.Fill( dibdR_Gen, eventweight )
+	h_Mass_Gen_ch1.Fill(dibMass_Gen, eventweight)
+	h_dR_fine_Gen_ch1.Fill( dibdR_Gen, eventweight )
+	h_Mass_fine_Gen_ch1.Fill(dibMass_Gen, eventweight)
+      else:
+        print "Error!"
     else:
       print "Error!"
-
     #f_hist.Write(h_dR)
     #f_hist.Write(h_Mass) 
 
