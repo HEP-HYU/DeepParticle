@@ -1,4 +1,1 @@
-ver 01
-configDir /home/seohyun/work/tmp/
-weightDir train
-modelfile model_2_0.7691.h5
+modelFile models/33v_300n_layer_9/model_out

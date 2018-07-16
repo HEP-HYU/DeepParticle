@@ -1,379 +1,139 @@
-from __future__ import print_function
+from __future__ import division
 import sys, os
 import google.protobuf
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DIVICES"] = "1"
 
-import matplotlib.pyplot as plt
-import pandas as pd
-from sklearn.preprocessing import StandardScaler, label_binarize
-from sklearn.decomposition import PCA
-from sklearn.utils import shuffle, class_weight
-from sklearn.metrics import roc_auc_score, roc_curve
-from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
 import numpy as np
-from root_numpy import array2tree, tree2array
 import csv
+from sklearn.utils import shuffle
 import re
 import string
 import math
+from ROOT import TFile, TTree
 from ROOT import *
 import ROOT
 from array import array
-
+import pandas as pd
 import tensorflow as tf
-import keras
-from keras.utils import np_utils, multi_gpu_model
-from keras.models import Model, Sequential, load_model
-from keras.layers import Input, Dense, Activation, Dropout, add
-from keras.layers.normalization import BatchNormalization
-from keras.regularizers import l2
-from keras.optimizers import Adam, SGD
-from keras.callbacks import Callback, ModelCheckpoint
 
-ver = "01" 
-configDir = "/home/seohyun/work/tmp/" 
-weightDir = "train"
-modelfile = ""
+def weight_variable(shape):
+  initial = tf.truncated_normal(shape, stddev=0.1)
+  return tf.Variable(initial)
 
-if not os.path.exists(configDir+weightDir+ver):
-  os.makedirs(configDir+weightDir+ver)
-test = os.listdir(configDir+weightDir+ver)
-for item in test:
-  if item.endswith(".pdf") or item.endswith(".h5") or item.endswith("log"):
-    os.remove(os.path.join(configDir+weightDir+ver, item))
+def bias_variable(shape) :
+  initial = tf.constant(0.1, shape=shape)
+  return tf.Variable(initial)
 
+df = pd.read_hdf("output_ttbb.h5")
+df = df.filter(['signal',
+    'dR','dEta','dPhi',
+    'nuPt','nuEta','nuPhi','nuMass',
+    'lbPt','lbEta','lbPhi','lbMass',
+    'lb1Pt','lb1Eta','lb1Phi','lb1Mass',
+    'lb2Pt','lb2Eta','lb2Phi','lb2Mass',
+    'diPt','diEta','diPhi','diMass',
+    'csv1','csv2','pt1','pt2','eta1','eta2','phi1','phi2','e1','e2'
+])
+train_input = df.values
+#np.load(df.values).astyle(np.float32)
+train_out = train_input[:,0]
+train_data = train_input[:,1:]
 
-#######################
-#Plot correlaton matrix
-#######################
-def correlations(data, name, **kwds):
-    """Calculate pairwise correlation between features.
-    
-    Extra arguments are passed on to DataFrame.corr()
-    """
-    # simply call df.corr() to get a table of
-    # correlation values if you do not need
-    # the fancy plotting
-    corrmat = data.corr(**kwds)
+numbertr=len(train_out)
 
-    fig, ax1 = plt.subplots(ncols=1, figsize=(6,5))
-    
-    opts = {'cmap': plt.get_cmap("RdBu"),
-            'vmin': -1, 'vmax': +1}
-    heatmap1 = ax1.pcolor(corrmat, **opts)
-    plt.colorbar(heatmap1, ax=ax1)
+order=shuffle(range(numbertr),random_state=200)
+train_out = train_out[order]
+train_data = train_data[order,0::]
+train_out = train_out.reshape((numbertr,1))
+trainnb = 0.9
 
-    ax1.set_title("Correlations")
+valid_data = train_data[int(trainnb*numbertr):numbertr,0::]
+valid_data_out = train_out[int(trainnb*numbertr):numbertr]
 
-    labels = corrmat.columns.values
-    for ax in (ax1,):
-        ax.tick_params(labelsize=6)
-        # shift location of ticks to center of the bins
-        ax.set_xticks(np.arange(len(labels))+0.5, minor=False)
-        ax.set_yticks(np.arange(len(labels))+0.5, minor=False)
-        ax.set_xticklabels(labels, minor=False, ha='right', rotation=90)
-        ax.set_yticklabels(labels, minor=False)
-        
-    plt.tight_layout()
-    #plt.show()
-    if name == 'sig':
-      plt.savefig(configDir+weightDir+ver+'/fig_corr_s.pdf')
-      print('Correlation matrix for signal is saved!')
-      plt.gcf().clear() 
-    elif name == 'bkg':
-      plt.savefig(configDir+weightDir+ver+'/fig_corr_b.pdf')
-      plt.gcf().clear() 
-      print('Correlation matrix for background is saved!')
-    else: print('Wrong class name!')
+train_data_out = train_out[0:int(trainnb*numbertr)]
+train_data = train_data[0:int(trainnb*numbertr),0::]
 
+sess = tf.InteractiveSession()
 
-#####################
-#Plot input variables
-#####################
-def inputvars(sigdata, bkgdata, signame, bkgname, **kwds):
-    print('Plotting input variables')
-    bins = 40
-    for colname in sigdata:
-      dataset = [sigdata, bkgdata]
-      low = min(np.min(d[colname].values) for d in dataset)
-      high = max(np.max(d[colname].values) for d in dataset)
-      if high > 500: low_high = (low,500)
-      else: low_high = (low,high)
+x = tf.placeholder(tf.float32, shape=[None,33])
+y_ = tf.placeholder(tf.float32, shape=[None,1])
 
-      plt.figure()
-      sigdata[colname].plot.hist(color='b', density=True, range=low_high, bins=bins, histtype='step', label='signal')
-      bkgdata[colname].plot.hist(color='r', density=True, range=low_high, bins=bins, histtype='step', label='background')
-      plt.xlabel(colname)
-      plt.ylabel('A.U.')
-      plt.title('Intput variables')
-      plt.legend(loc='upper right')
-      plt.savefig(configDir+weightDir+ver+'/fig_input_'+colname+'.pdf')
-      plt.gcf().clear()
-      plt.close()
+W1 = weight_variable([33,300])
+b1 = bias_variable([300])
+A1 = tf.nn.relu(tf.matmul(x,W1)+b1)
+W2 = weight_variable([300,300])
+b2 = bias_variable([300])
+A2 = tf.nn.relu(tf.matmul(A1,W2)+b2)
+W3 = weight_variable([300,300])
+b3 = bias_variable([300])
+A3 = tf.nn.relu(tf.matmul(A2,W3)+b3)
+W4 = weight_variable([300,300])
+b4 = bias_variable([300])
+A4 = tf.nn.relu(tf.matmul(A3,W4)+b4)
+W5 = weight_variable([300,300])
+b5 = bias_variable([300])
+A5 = tf.nn.relu(tf.matmul(A4,W5)+b5)
+W6 = weight_variable([300,300])
+b6 = bias_variable([300])
+A6 = tf.nn.relu(tf.matmul(A5,W6)+b6)
+W7 = weight_variable([300,300])
+b7 = bias_variable([300])
+A7 = tf.nn.relu(tf.matmul(A6,W7)+b7)
+W8 = weight_variable([300,300])
+b8 = bias_variable([300])
+A8 = tf.nn.relu(tf.matmul(A7,W8)+b8)
+W9 = weight_variable([300,1])
+b9 = bias_variable([1])
+y = tf.matmul(A8,W9)+b9
 
+cross_entropy = tf.reduce_mean(
+    tf.nn.sigmoid_cross_entropy_with_logits(labels=y_, logits=y))
 
-########################################
-#Compute AUC after training and plot ROC
-########################################
-class roc_callback(Callback):
-  def __init__(self, training_data, validation_data, model):
-      self.x = training_data[0]
-      self.y = training_data[1]
-      self.x_val = validation_data[0]
-      self.y_val = validation_data[1]
-      self.model_to_save = model
+train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 
-  def on_train_begin(self, logs={}):
-      return
+ntrain = len(train_data)
+batch_size = 128
+cur_id = 0
+cur_id_p = 0
+cur_id_n = 0
+epoch = 0
 
-  def on_train_end(self, logs={}):
-      return
+saver = tf.train.Saver()
+model_output_name = "33v_300n_layer_9"
 
-  def on_epoch_begin(self, epoch, logs={}):
-      return
+tmpout=''
+with tf.Session() as sess :
+  sess.run(tf.global_variables_initializer())
+  if os.path.exists('models/'+model_output_name+'/model_out.meta'):
+    print "Model file already exists!"
+    saver.restore(sess, 'models/'+model_output_name+'/model_out')
+  else :
+    for i in range(5000) :
+      batch_data = train_data[cur_id:cur_id+batch_size]
+      batch_data_out = train_data_out[cur_id:cur_id+batch_size]
+      cur_id = cur_id + batch_size
+      if cur_id > ntrain :
+        cur_id = 0
+        epoch += 1
+        tmpout = str(epoch) + "epoch passed"
+        print tmpout
 
-  def on_epoch_end(self, epoch, logs={}):
-      ############
-      #compute AUC
-      ############
-      print('Calculating AUC of epoch '+str(epoch+1))
-      y_pred = self.model.predict(self.x, batch_size=2000)
-      roc = roc_auc_score(self.y, y_pred)
-      y_pred_val = self.model.predict(self.x_val, batch_size=2000)
-      roc_val = roc_auc_score(self.y_val, y_pred_val)
-      print('\rroc-auc: %s - roc-auc_val: %s' % (str(round(roc,4)), str(round(roc_val,4))),end=100*' '+'\n')
+      train_step.run(feed_dict={x:batch_data, y_:batch_data_out})
+      
+    saver.save(sess, 'models/'+model_output_name+'/model_out')
+    print "Model saved!"
 
-      ###################
-      #Calculate f1 score
-      ###################
-      val_predict = (y_pred_val[:,1]).round()
-      val_targ = self.y_val[:,1]
-      val_f1 = f1_score(val_targ, val_predict)
-      val_recall = recall_score(val_targ, val_predict)
-      val_precision = precision_score(val_targ, val_predict)
-      print('val_f1: %.4f, val_precision: %.4f, val_recall %.4f' %(val_f1, val_precision, val_recall))
+  prediction = tf.nn.sigmoid(y)
+  pred = prediction.eval(feed_dict={x:valid_data})
 
-      ###############
-      #Plot ROC curve
-      ###############
-      fpr = dict()
-      tpr = dict()
-      roc_auc = dict()
-      #fpr[0], tpr[0], thresholds0 = roc_curve(self.y_val[:,0], y_pred_val[:,0], pos_label=1)#w.r.t bkg is truth in val set
-      fpr[1], tpr[1], thresholds1 = roc_curve(self.y_val[:,1], y_pred_val[:,1], pos_label=1)#w.r.t sig is truth in val set
-      fpr[2], tpr[2], thresholds2 = roc_curve(self.y[:,1], y_pred[:,1], pos_label=1)#w.r.t sig is truth in training set, for overtraining check
-      #plt.plot(1-fpr[0], 1-(1-tpr[0]), 'b')#same as [1]
-      plt.plot(tpr[1], 1-fpr[1], 'r')#HEP style ROC
-      #plt.plot([0,1], [0,1], 'r--')
-      #plt.legend(['class 1'], loc = 'lower right')
-      plt.xlabel('Signal Efficiency')
-      plt.ylabel('Background Rejection')
-      plt.title('ROC Curve')
-      roc_path = configDir+weightDir+ver+'/fig_roc_%d_%.4f.pdf' %(epoch+1,round(roc_val,4))
-      plt.savefig(roc_path)
-      plt.gcf().clear()
+  with open('models/'+model_output_name+'/output.csv','wb') as f :
+    writer = csv.writer(f, delimiter=" ")
+    for i in range(len(valid_data)) :
+      val_x = valid_data_out[i]
+      val_y = pred[i]
+      writer.writerows(zip(val_y,val_x))
 
-      ########################################################
-      #Overtraining Check, as well as bkg & sig discrimination
-      ########################################################
-      bins = 40
-      scores = [tpr[1], fpr[1], tpr[2], fpr[2]]
-      low = min(np.min(d) for d in scores)
-      high = max(np.max(d) for d in scores)
-      low_high = (low,high)
-
-      #test is filled
-      plt.hist(tpr[1],
-               color='b', alpha=0.5, range=low_high, bins=bins,
-               histtype='stepfilled', density=True, label='S (test)')
-      plt.hist(fpr[1],
-               color='r', alpha=0.5, range=low_high, bins=bins,
-               histtype='stepfilled', density=True, label='B (test)')
-
-      #training is dotted
-      hist, bins = np.histogram(tpr[2], bins=bins, range=low_high, density=True)
-      scale = len(tpr[2]) / sum(hist)
-      err = np.sqrt(hist * scale) / scale
-      width = (bins[1] - bins[0])
-      center = (bins[:-1] + bins[1:]) / 2
-      plt.errorbar(center, hist, yerr=err, fmt='o', c='b', label='S (training)')
-      hist, bins = np.histogram(fpr[2], bins=bins, range=low_high, density=True)
-      scale = len(tpr[2]) / sum(hist)
-      err = np.sqrt(hist * scale) / scale
-      plt.errorbar(center, hist, yerr=err, fmt='o', c='r', label='B (training)')
-
-      plt.xlabel("Deep Learning Score")
-      plt.ylabel("Arbitrary units")
-      plt.legend(loc='best')
-      overtrain_path = configDir+weightDir+ver+'/fig_overtraining_%d_%.4f.pdf' %(epoch+1,round(roc_val,4))
-      plt.savefig(overtrain_path)
-      plt.gcf().clear()
-      print('ROC curve and overtraining check plots are saved!')
-
-      del y_pred, y_pred_val, fpr, tpr, roc_auc
-
-      ###############################
-      #Save single gpu model manually
-      ###############################
-      modelfile = 'model_%d_%.4f.h5' %(epoch+1,round(roc_val,4))
-      self.model_to_save.save(configDir+weightDir+ver+'/'+modelfile)
-      print('Current model is saved')
-
-      return
-
-  def on_batch_begin(self, batch, logs={}):
-      return
-
-  def on_batch_end(self, batch, logs={}):
-      return
-
-####################
-#read input and skim
-####################
-data = pd.read_hdf('output_ttbb.h5')
-#print(daaxis=data.index.is_unique)#check if indices are duplicated
-data = shuffle(data)
-NumEvt = data['signal'].value_counts(sort=True, ascending=True)
-#print(NumEvt)
-print('bkg/sig events : '+ str(NumEvt.tolist()))
-data = data.drop(data.query('signal < 1').sample(frac=.5, axis=0).index)
-NumEvt2 = data['signal'].value_counts(sort=True, ascending=True)
-#print(NumEvt2)
-print('bkg/sig events after bkg skim : '+ str(NumEvt2.tolist()))
-
-
-##########################################
-#drop phi and label features, correlations
-##########################################
-#col_names = list(data_train)
-labels = data.filter(['signal'], axis=1)
-data = data.filter(['signal', 
-    'dR', 'dEta', 'dPhi', 
-    'nuPt', 'nuEta', 'nuPhi', 'nuMass', 
-    'lbPt', 'lbEta', 'lbPhi', 'lbMass', 
-    'lb1Pt', 'lb1Eta', 'lb1Phi', 'lb1Mass', 
-    'lb2Pt', 'lb2Eta', 'lb2Phi', 'lb2Mass', 
-#    'lb1nuPt', 'lb1nuEta', 'lb1nuPhi', 'lb1nuMass', 
-#    'lb2nuPt', 'lb2nuEta', 'lb2nuPhi', 'lb2nuMass', 
-    'diPt', 'diEta', 'diPhi', 'diMass', 
-    'csv1', 'csv2', 'pt1', 'pt2', 'eta1', 'eta2', 'phi1', 'phi2', 'e1', 'e2', ], axis=1)
-data.astype('float32')
-#print list(data_train)
-
-#correlations(data.loc[data['signal'] == 0].drop('signal', axis=1), 'bkg')
-#correlations(data.loc[data['signal'] == 1].drop('signal', axis=1), 'sig')
-
-#inputvars(data.loc[data['signal'] == 1].drop('signal', axis=1), data.loc[data['signal'] == 0].drop('signal', axis=1), 'sig', 'bkg')
-
-data = data.drop('signal', axis=1) #then drop label
-
-
-###############
-#split datasets
-###############
-train_sig = labels.loc[labels['signal'] == 1].sample(frac=0.8,random_state=200)
-train_bkg = labels.loc[labels['signal'] == 0].sample(frac=0.8,random_state=200)
-test_sig = labels.loc[labels['signal'] == 1].drop(train_sig.index)
-test_bkg = labels.loc[labels['signal'] == 0].drop(train_bkg.index)
-
-train_idx = pd.concat([train_sig, train_bkg]).index
-test_idx = pd.concat([test_sig, test_bkg]).index
-
-data_train = data.loc[train_idx,:].copy()
-data_test = data.loc[test_idx,:].copy()
-labels_train = labels.loc[train_idx,:].copy()
-labels_test = labels.loc[test_idx,:].copy()
-
-print('Training signal: '+str(len(train_sig))+' / testing signal: '+str(len(test_sig))+' / training background: '+str(len(train_bkg))+' / testing background: '+str(len(test_bkg)))
-#print(str(len(X_train)) +' '+ str(len(Y_train)) +' ' + str(len(X_test)) +' '+ str(len(Y_test)))
-#print(labels)
-
-labels_train = labels_train.values
-Y_train = np_utils.to_categorical(labels_train)
-labels_test = labels_test.values
-Y_test = np_utils.to_categorical(labels_test)
-
-########################
-#Standardization and PCA
-########################
-scaler = StandardScaler()
-data_train_sc = scaler.fit_transform(data_train)
-data_test_sc = scaler.fit_transform(data_test)
-X_train = data_train_sc
-X_test = data_test_sc
-
-#################################
-#Keras model compile and training
-#################################
-a = 400
-b = 0.3
-init = 'glorot_uniform'
-
-inputs = Input(shape=(33,))
-x = Dense(a, kernel_regularizer=l2(1E-2))(inputs)
-x = BatchNormalization()(x)
-x = Dense(a, activation='relu', kernel_initializer=init, bias_initializer='zeros')(x)
-x = Dropout(b)(x)
-
-x = BatchNormalization()(x)
-x = Dense(a, activation='relu', kernel_initializer=init, bias_initializer='zeros')(x)
-x = Dropout(b)(x)
-
-x = BatchNormalization()(x)
-x = Dense(a, activation='relu', kernel_initializer=init, bias_initializer='zeros')(x)
-x = Dropout(b)(x)
-
-x = BatchNormalization()(x)
-x = Dense(a, activation='relu', kernel_initializer=init, bias_initializer='zeros')(x)
-x = Dropout(b)(x)
-
-x = BatchNormalization()(x)
-x = Dense(a, activation='relu', kernel_initializer=init, bias_initializer='zeros')(x)
-x = Dropout(b)(x)
-
-x = BatchNormalization()(x)
-x = Dense(a, activation='relu', kernel_initializer=init, bias_initializer='zeros')(x)
-x = Dropout(b)(x)
-
-x = BatchNormalization()(x)
-x = Dense(a, activation='relu', kernel_initializer=init, bias_initializer='zeros')(x)
-x = Dropout(b)(x)
-
-x = BatchNormalization()(x)
-x = Dense(a, activation='relu', kernel_initializer=init, bias_initializer='zeros')(x)
-x = Dropout(b)(x)
-
-predictions = Dense(2, activation='sigmoid')(x)
-#predictions = Dense(2, activation='sigmoid')(x)
-model = Model(inputs=inputs, outputs=predictions)
-
-adam=keras.optimizers.Adam(lr=1E-3, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=1E-3)
-model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['binary_accuracy'])
-
-modelfile = 'model_{epoch:02d}_{val_binary_accuracy:.4f}.h5'
-checkpoint = ModelCheckpoint(configDir+weightDir+ver+'/'+modelfile, monitor='val_binary_accuracy', verbose=1, save_best_only=False)#, mode='max')
-history = model.fit(X_train, Y_train, 
-                             epochs=10, batch_size=128, 
-                             validation_data=(X_test,Y_test), 
-                             #class_weight={ 0: 14, 1: 1 }, 
-                             callbacks=[roc_callback(training_data=(X_train,Y_train), validation_data=(X_test,Y_test), model=model)]
-                             )
-
-print("Now predict score with test set")
-for filename in os.listdir(configDir+weightDir+ver):
-  if filename.startswith('model_2'): bestModel = filename
-
-print("Use "+bestModel)
-model_best = load_model(configDir+weightDir+ver+'/'+bestModel)
-y_pred = model_best.predict(X_test, batch_size=1000)
-#score = model_best.evaluate(X_test, Y_test)
-#print("Test loss : ", score[0])
-#print("Test accuracy : ", score[1])
-print(y_pred)
-
-with open("var.txt", "w") as f :
-  f.write("ver "+ver+"\n")
-  f.write("configDir "+configDir+"\n")
-  f.write("weightDir "+weightDir+"\n")
-  f.write("modelfile "+str(bestModel)+"\n")
+with open("var.txt","w") as f :
+  f.write("directory models/"+model_output_name+"/model_out\n")
+  
