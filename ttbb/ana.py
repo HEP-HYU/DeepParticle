@@ -337,7 +337,8 @@ with tf.Session() as sess:
     for i in range( len(chain.jet_pT) ):
       tmp = TLorentzVector()
       tmp.SetPtEtaPhiE( chain.jet_pT[i], chain.jet_eta[i], chain.jet_phi[i], chain.jet_E[i] )
-      if tmp.Pt() > 20 and tmp.Eta() < 2.5 and tmp.Eta() > -2.5: 
+      tmp *= chain.jet_JER_Nom[i]
+      if tmp.Pt() > 20 and abs(tmp.Eta()) < 2.4: 
         if addbjet1.DeltaR( tmp ) < 0.4:
           addbjet1_matched = tmp;
         if addbjet2.DeltaR( tmp ) < 0.4:
@@ -349,7 +350,14 @@ with tf.Session() as sess:
     indexSmalldR = []
     for j in range( len(chain.jet_pT) - 1):
       for k in range( j+1, len(chain.jet_pT) ):
-        if chain.jet_CSV[j] > btag and chain.jet_CSV[k] > btag:
+        jet1 = TLorentzVector()
+        jet1.SetPtEtaPhiE( chain.jet_pT[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_E[j] )
+        jet1 *= chain.jet_JER_Nom[j]
+        jet2 = TLorentzVector()
+        jet2.SetPtEtaPhiE( chain.jet_pT[k], chain.jet_eta[k], chain.jet_phi[k], chain.jet_E[k] )
+        jet2 *= chain.jet_JER_Nom[k]
+
+        if jet1.Pt() > 20 and abs(jet1.Eta()) < 2.4 and chain.jet_CSV[j] > btag and jet2.Pt() > 20 and abs(jet2.Eta()) < 2.4 and chain.jet_CSV[k] > btag:
           b1 = TLorentzVector()
           b2 = TLorentzVector()
           b1.SetPtEtaPhiE( chain.jet_pT[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_E[j]) 
