@@ -55,6 +55,10 @@ def ana(directory, inputFile, process) :
   if 'Data' in process:
     data = True
 
+  ttbb = False 
+  if 'ttbb' in process:
+    ttbb = True
+
   closureTest = False
   model = load_model(configDir+weightDir+ver+'/'+modelfile)
 
@@ -207,8 +211,7 @@ def ana(directory, inputFile, process) :
       h_respMatrix_invMass[iChannel][iStep].GetYaxis().SetTitle("Gen. M_{b#bar{b}}(GeV)")
       h_respMatrix_invMass[iChannel][iStep].Sumw2()
  
-  data = True
-  if data == False :
+  if ttbb == True :
     genchain = TChain("ttbbLepJets/gentree")
     genchain.Add(directory+"/"+inputFile+".root")
 
@@ -288,8 +291,9 @@ def ana(directory, inputFile, process) :
 	  b2 = TLorentzVector()
 	  b1.SetPtEtaPhiE(chain.jet_pT[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_E[j])
 	  b2.SetPtEtaPhiE(chain.jet_pT[k], chain.jet_eta[k], chain.jet_phi[k], chain.jet_E[k])
-          b1 *= chain.jet_JER_Nom[j]
-          b2 *= chain.jet_JER_Nom[k]
+          if not data :
+	    b1 *= chain.jet_JER_Nom[j]
+	    b2 *= chain.jet_JER_Nom[k]
           dR = b1.DeltaR(b2)
 
 	  combidR.append([j,k])
@@ -313,14 +317,17 @@ def ana(directory, inputFile, process) :
 	    minimumdR = dR
 	    mindR_idx = tmp_idx
 
-    #gen level additional bjets 
+    #gen level additional bjets
     gen_addbjet1 = TLorentzVector()
     gen_addbjet2 = TLorentzVector()
-    gen_addbjet1.SetPtEtaPhiE(chain.addbjet1_pt,chain.addbjet1_eta,chain.addbjet1_phi,chain.addbjet1_e)
-    gen_addbjet2.SetPtEtaPhiE(chain.addbjet2_pt,chain.addbjet2_eta,chain.addbjet2_phi,chain.addbjet2_e)
+    gen_dR = 999
+    gen_M = 999
+    if ttbb :
+      gen_addbjet1.SetPtEtaPhiE(chain.addbjet1_pt,chain.addbjet1_eta,chain.addbjet1_phi,chain.addbjet1_e)
+      gen_addbjet2.SetPtEtaPhiE(chain.addbjet2_pt,chain.addbjet2_eta,chain.addbjet2_phi,chain.addbjet2_e)
 
-    gen_dR = gen_addbjet1.DeltaR(gen_addbjet2)
-    gen_M = (gen_addbjet1+gen_addbjet2).M()
+      gen_dR = gen_addbjet1.DeltaR(gen_addbjet2)
+      gen_M = (gen_addbjet1+gen_addbjet2).M()
 
     reco_dR = -999
     reco_M = -999
@@ -390,13 +397,17 @@ def ana(directory, inputFile, process) :
 	h_nbjets[passchannel][iStep].Fill(nbjets, eventweight)
 	h_reco_addjets_deltaR[passchannel][iStep].Fill(reco_dR, eventweight)
 	h_reco_addjets_invMass[passchannel][iStep].Fill(reco_M, eventweight)
-	h_gen_addbjets_deltaR[passchannel][iStep].Fill(gen_dR, eventweight)
-	h_gen_addbjets_invMass[passchannel][iStep].Fill(gen_M, eventweight)
-	h_respMatrix_deltaR[passchannel][iStep].Fill(reco_dR, gen_dR, eventweight)
-	h_respMatrix_invMass[passchannel][iStep].Fill(reco_M, gen_M, eventweight)
+	if ttbb :
+	  h_gen_addbjets_deltaR[passchannel][iStep].Fill(gen_dR, eventweight)
+	  h_gen_addbjets_invMass[passchannel][iStep].Fill(gen_M, eventweight)
+	  h_respMatrix_deltaR[passchannel][iStep].Fill(reco_dR, gen_dR, eventweight)
+	  h_respMatrix_invMass[passchannel][iStep].Fill(reco_M, gen_M, eventweight)
 	
-  matching_DNN = float(nEvt_isMatch_DNN) / float(nEvents)
-  matching_mindR = float(nEvt_isMatch_mindR) / float(nEvents)
+  matching_DNN = 0.0
+  matching_mindR = 0.0
+  if nEvents is not 0 :
+    matching_DNN = float(nEvt_isMatch_DNN) / float(nEvents)
+    matching_mindR = float(nEvt_isMatch_mindR) / float(nEvents)
   print "Selected Events / Total Events : "+str(nEvents)+"/"+str(chain.GetEntries())
   print "Matching Ratio from DNN : "+str(matching_DNN)+"("+str(nEvt_isMatch_DNN)+"/"+str(nEvents)+")"
   print "Matching Ratio from minimun dR : "+str(matching_mindR)+"("+str(nEvt_isMatch_mindR)+"/"+str(nEvents)+")"

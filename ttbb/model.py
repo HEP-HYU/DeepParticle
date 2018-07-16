@@ -354,7 +354,7 @@ model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['binary_acc
 modelfile = 'model_{epoch:02d}_{val_binary_accuracy:.4f}.h5'
 checkpoint = ModelCheckpoint(configDir+weightDir+ver+'/'+modelfile, monitor='val_binary_accuracy', verbose=1, save_best_only=False)#, mode='max')
 history = model.fit(X_train, Y_train, 
-                             epochs=2, batch_size=128, 
+                             epochs=10, batch_size=128, 
                              validation_data=(X_test,Y_test), 
                              #class_weight={ 0: 14, 1: 1 }, 
                              callbacks=[roc_callback(training_data=(X_train,Y_train), validation_data=(X_test,Y_test), model=model)]
