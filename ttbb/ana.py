@@ -339,7 +339,7 @@ def ana(directory, inputFile, process) :
     chain = TChain("ttbbLepJets/tree")
     chain.Add(directory+"/"+inputFile+".root")
 
-    print "TREE RUN"
+    print "\nTREE RUN"
     nEvents = 0
     nEvt_isMatch_DNN = 0
     nEvt_isMatch_mindR = 0
@@ -385,15 +385,13 @@ def ana(directory, inputFile, process) :
       combidR = []
       minimumdR = 9999
       for j in range(0, len(chain.jet_pT)-1):
-        if chain.jet_pT[j] < jet_pt or abs(chain.jet_eta[j]) < jet_eta : continue
 	for k in range(j+1, len(chain.jet_pT)):
-	  if chain.jet_pT[k] < jet_pt or abs(chain.jet_eta[k]) < jet_eta : continue
-	  if chain.jet_CSV[j] > jet_CSV_tight and chain.jet_CSV[k] > jet_CSV_tight:
-	    b1 = TLorentzVector()
-	    b2 = TLorentzVector()
-	    b1.SetPtEtaPhiE(chain.jet_pT[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_E[j])
-	    b2.SetPtEtaPhiE(chain.jet_pT[k], chain.jet_eta[k], chain.jet_phi[k], chain.jet_E[k])
-#if not data :
+          b1 = TLorentzVector()
+	  b2 = TLorentzVector()
+	  b1.SetPtEtaPhiE(chain.jet_pT[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_E[j])
+	  b2.SetPtEtaPhiE(chain.jet_pT[k], chain.jet_eta[k], chain.jet_phi[k], chain.jet_E[k])
+	  if b1.Pt() > jet_pt and abs(b1.Eta()) < jet_eta and chain.jet_CSV[j] > jet_CSV_tight and b2.Pt() > jet_pt and abs(b2.Eta()) < jet_eta and chain.jet_CSV[k] > jet_CSV_tight:
+	    #if not data :
 #	      b1 *= chain.jet_JER_Nom[j]
 #	      b2 *= chain.jet_JER_Nom[k]
 	    dR = b1.DeltaR(b2)
@@ -508,6 +506,7 @@ def ana(directory, inputFile, process) :
     if nEvents is not 0 :
       matching_DNN = float(nEvt_isMatch_DNN) / float(nEvents)
       matching_mindR = float(nEvt_isMatch_mindR) / float(nEvents)
+    print "\n"
     print "Selected Events / Total Events : "+str(nEvents)+"/"+str(chain.GetEntries())
     print "Matching Ratio from DNN : "+str(matching_DNN)+"("+str(nEvt_isMatch_DNN)+"/"+str(nEvents)+")"
     print "Matching Ratio from minimun dR : "+str(matching_mindR)+"("+str(nEvt_isMatch_mindR)+"/"+str(nEvents)+")"
@@ -549,3 +548,8 @@ def ana(directory, inputFile, process) :
 	h_respMatrix_invMass[iChannel][iStep].ClearUnderflowAndOverflow()
     f_out.Write()
     f_out.Close()
+
+    timer.Stop()
+    realtime = timer.RealTime()
+    cputime = timer.CpuTime()
+    print("Real time={0:6.2f} seconds, CPU time={1:6.2f} seconds").format(realtime,cputime)

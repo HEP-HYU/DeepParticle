@@ -1,0 +1,4 @@
+ver 01
+configDir /home/seohyun/work/tmp/
+weightDir train
+modelfile model_25_0.7772.h5
