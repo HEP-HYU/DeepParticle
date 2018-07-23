@@ -337,12 +337,13 @@ with tf.Session() as sess:
     for i in range( len(chain.jet_pT) ):
       tmp = TLorentzVector()
       tmp.SetPtEtaPhiE( chain.jet_pT[i], chain.jet_eta[i], chain.jet_phi[i], chain.jet_E[i] )
-      tmp *= chain.jet_JER_Nom[i]
-      if tmp.Pt() > 20 and abs(tmp.Eta()) < 2.4: 
-        if addbjet1.DeltaR( tmp ) < 0.4:
-          addbjet1_matched = tmp;
-        if addbjet2.DeltaR( tmp ) < 0.4:
-          addbjet2_matched = tmp;
+      #when finding matched jet, not use pt and eta
+      #tmp *= chain.jet_JER_Nom[i]
+      #if tmp.Pt() > 20 and abs(tmp.Eta()) < 2.4: 
+      if addbjet1.DeltaR( tmp ) < 0.4:
+        addbjet1_matched = tmp;
+      if addbjet2.DeltaR( tmp ) < 0.4:
+        addbjet2_matched = tmp;
 
     small_dR = 999
     test_data = []
@@ -357,7 +358,9 @@ with tf.Session() as sess:
         jet2.SetPtEtaPhiE( chain.jet_pT[k], chain.jet_eta[k], chain.jet_phi[k], chain.jet_E[k] )
         jet2 *= chain.jet_JER_Nom[k]
 
-        if jet1.Pt() > 20 and abs(jet1.Eta()) < 2.4 and chain.jet_CSV[j] > btag and jet2.Pt() > 20 and abs(jet2.Eta()) < 2.4 and chain.jet_CSV[k] > btag:
+        #when training, not applying jet pt and eta for signal sample
+        #acceptanceCutOnJets = jet1.Pt() > 20 and abs(jet1.Eta()) < 2.4 and jet2.Pt() > 20 and abs(jet2.Eta()) < 2.4
+        if chain.jet_CSV[j] > btag and chain.jet_CSV[k] > btag:
           b1 = TLorentzVector()
           b2 = TLorentzVector()
           b1.SetPtEtaPhiE( chain.jet_pT[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_E[j]) 
@@ -500,38 +503,64 @@ with tf.Session() as sess:
     dibdR_Gen = addbjet1.DeltaR( addbjet2 )
     dibMass_Gen = (addbjet1 + addbjet2).M()
 
-    if i%2 == 0:
+    Split = False
+
+    if Split:
+      if i%2 == 0:
+        if chain.channel == 0:
+          h2_dR_Response_ch0.Fill( dibdR, dibdR_Gen, eventweight)
+          h2_Mass_Response_ch0.Fill( dibMass, dibMass_Gen, eventweight)
+        elif chain.channel == 1:
+          h2_dR_Response_ch1.Fill( dibdR, dibdR_Gen, eventweight)
+          h2_Mass_Response_ch1.Fill( dibMass, dibMass_Gen, eventweight)
+        else:
+          print "Error! --> No channel information"
+      elif i%2 == 1:
+        if chain.channel == 0:
+          h_dR_ch0.Fill( dibdR, eventweight )
+	  h_Mass_ch0.Fill(dibMass, eventweight)
+	  h_dR_dR_ch0.Fill( dibdR_dR, eventweight)
+	  h_Mass_dR_ch0.Fill(dibMass_dR, eventweight)
+	  h_dR_Gen_ch0.Fill( dibdR_Gen, eventweight )
+	  h_Mass_Gen_ch0.Fill(dibMass_Gen, eventweight)
+	  h_dR_fine_Gen_ch0.Fill( dibdR_Gen, eventweight )
+	  h_Mass_fine_Gen_ch0.Fill(dibMass_Gen, eventweight)
+        elif chain.channel ==1:
+          h_dR_ch1.Fill( dibdR, eventweight )
+	  h_Mass_ch1.Fill(dibMass, eventweight)
+	  h_dR_dR_ch1.Fill( dibdR, eventweight )
+	  h_Mass_dR_ch1.Fill(dibMass, eventweight)
+	  h_dR_Gen_ch1.Fill( dibdR_Gen, eventweight )
+	  h_Mass_Gen_ch1.Fill(dibMass_Gen, eventweight)
+	  h_dR_fine_Gen_ch1.Fill( dibdR_Gen, eventweight )
+	  h_Mass_fine_Gen_ch1.Fill(dibMass_Gen, eventweight)
+        else:
+          print "Error!  --> No channel information"
+    else:
       if chain.channel == 0:
         h2_dR_Response_ch0.Fill( dibdR, dibdR_Gen, eventweight)
         h2_Mass_Response_ch0.Fill( dibMass, dibMass_Gen, eventweight)
+        h_dR_ch0.Fill( dibdR, eventweight )
+        h_Mass_ch0.Fill(dibMass, eventweight)
+        h_dR_dR_ch0.Fill( dibdR_dR, eventweight)
+        h_Mass_dR_ch0.Fill(dibMass_dR, eventweight)
+        h_dR_Gen_ch0.Fill( dibdR_Gen, eventweight )
+        h_Mass_Gen_ch0.Fill(dibMass_Gen, eventweight)
+        h_dR_fine_Gen_ch0.Fill( dibdR_Gen, eventweight )
+        h_Mass_fine_Gen_ch0.Fill(dibMass_Gen, eventweight)
       elif chain.channel == 1:
         h2_dR_Response_ch1.Fill( dibdR, dibdR_Gen, eventweight)
         h2_Mass_Response_ch1.Fill( dibMass, dibMass_Gen, eventweight)
-      else:
-        print "Error!"
-    elif i%2 == 1:
-      if chain.channel == 0:
-        h_dR_ch0.Fill( dibdR, eventweight )
-	h_Mass_ch0.Fill(dibMass, eventweight)
-	h_dR_dR_ch0.Fill( dibdR_dR, eventweight)
-	h_Mass_dR_ch0.Fill(dibMass_dR, eventweight)
-	h_dR_Gen_ch0.Fill( dibdR_Gen, eventweight )
-	h_Mass_Gen_ch0.Fill(dibMass_Gen, eventweight)
-	h_dR_fine_Gen_ch0.Fill( dibdR_Gen, eventweight )
-	h_Mass_fine_Gen_ch0.Fill(dibMass_Gen, eventweight)
-      elif chain.channel ==1:
         h_dR_ch1.Fill( dibdR, eventweight )
-	h_Mass_ch1.Fill(dibMass, eventweight)
-	h_dR_dR_ch1.Fill( dibdR, eventweight )
-	h_Mass_dR_ch1.Fill(dibMass, eventweight)
-	h_dR_Gen_ch1.Fill( dibdR_Gen, eventweight )
-	h_Mass_Gen_ch1.Fill(dibMass_Gen, eventweight)
-	h_dR_fine_Gen_ch1.Fill( dibdR_Gen, eventweight )
-	h_Mass_fine_Gen_ch1.Fill(dibMass_Gen, eventweight)
+        h_Mass_ch1.Fill(dibMass, eventweight)
+        h_dR_dR_ch1.Fill( dibdR, eventweight )
+        h_Mass_dR_ch1.Fill(dibMass, eventweight)
+        h_dR_Gen_ch1.Fill( dibdR_Gen, eventweight )
+        h_Mass_Gen_ch1.Fill(dibMass_Gen, eventweight)
+        h_dR_fine_Gen_ch1.Fill( dibdR_Gen, eventweight )
+        h_Mass_fine_Gen_ch1.Fill(dibMass_Gen, eventweight)
       else:
-        print "Error!"
-    else:
-      print "Error!"
+        print "Error!  --> No channel information"
     #f_hist.Write(h_dR)
     #f_hist.Write(h_Mass) 
 
