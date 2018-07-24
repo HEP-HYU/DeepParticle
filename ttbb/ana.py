@@ -19,18 +19,7 @@ import re
 import string
 import math
 
-from tqdm import tqdm
-
-def printProgress(iteration, total, prefix = '', suffix = '', decimals = 1, barLength = 100):
-  nEvent = str(iteration) + '/' + str(total)
-  formatStr = "{0:." + str(decimals) + "f}"
-  percent = formatStr.format(100*(iteration/float(total)))
-  filledLength = int(round(barLength * iteration/float(total)))
-  bar = '#'*filledLength + '-'*(barLength-filledLength)
-  sys.stdout.write('\r%s |%s| %s%s %s %s' % (prefix, bar, percent, '%', suffix, nEvent)),
-  if iteration == total:
-    sys.stdout.write('\n')
-  sys.stdout.flush()
+import printProgress as ptp
 
 def weight_variable(shape):
   initial = tf.truncated_normal(shape, stddev=0.1)
@@ -310,14 +299,14 @@ def ana(directory, inputFile, process) :
 	h_respMatrix_invMass[iChannel][iStep].GetXaxis().SetTitle("Reco. M_{b#bar{b}}(GeV)")
 	h_respMatrix_invMass[iChannel][iStep].GetYaxis().SetTitle("Gen. M_{b#bar{b}}(GeV)")
 	h_respMatrix_invMass[iChannel][iStep].Sumw2()
-
+   
     if ttbb == True :
       genchain = TChain("ttbbLepJets/gentree")
       genchain.Add(directory+"/"+inputFile+".root")
 
       print "GENTREE RUN"
       for i in xrange(genchain.GetEntries()):
-	printProgress(i, genchain.GetEntries(), 'Progress:', 'Complete', 1, 50)
+	ptp.printProgress(i, genchain.GetEntries(), 'Progress:', 'Complete', 1, 50)
 	genchain.GetEntry(i)
 	addbjet1 = TLorentzVector()
 	addbjet2 = TLorentzVector()
@@ -335,7 +324,7 @@ def ana(directory, inputFile, process) :
 	  h_gen_addbjets_invMass_nosel[electron_ch].Fill(genM,genchain.genweight)
 	else:
 	  print("Error")
-	  
+    	  
     chain = TChain("ttbbLepJets/tree")
     chain.Add(directory+"/"+inputFile+".root")
 
@@ -345,7 +334,7 @@ def ana(directory, inputFile, process) :
     nEvt_isMatch_mindR = 0
 
     for i in xrange(chain.GetEntries()):
-      printProgress(i, chain.GetEntries(), 'Progress:', 'Complete', 1, 50)
+      ptp.printProgress(i, chain.GetEntries(), 'Progress:', 'Complete', 1, 50)
       chain.GetEntry(i)
 
       eventweight = chain.PUWeight[0]*chain.genweight
@@ -359,6 +348,7 @@ def ana(directory, inputFile, process) :
       lep = TLorentzVector()
       lep.SetPtEtaPhiE(chain.lepton_pT, chain.lepton_eta, chain.lepton_phi, chain.lepton_E)
 
+      passcut = 0
       passmuon = False
       passelectron = False
       passmuon = chain.channel == muon_ch and lep.Pt() > muon_pt and abs(lep.Eta()) < muon_eta 
@@ -386,35 +376,35 @@ def ana(directory, inputFile, process) :
       minimumdR = 9999
       for j in range(0, len(chain.jet_pT)-1):
 	for k in range(j+1, len(chain.jet_pT)):
-          b1 = TLorentzVector()
-	  b2 = TLorentzVector()
-	  b1.SetPtEtaPhiE(chain.jet_pT[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_E[j])
-	  b2.SetPtEtaPhiE(chain.jet_pT[k], chain.jet_eta[k], chain.jet_phi[k], chain.jet_E[k])
-	  if b1.Pt() > jet_pt and abs(b1.Eta()) < jet_eta and chain.jet_CSV[j] > jet_CSV_tight and b2.Pt() > jet_pt and abs(b2.Eta()) < jet_eta and chain.jet_CSV[k] > jet_CSV_tight:
-	    #if not data :
+	    b1 = TLorentzVector()
+	    b2 = TLorentzVector()
+	    b1.SetPtEtaPhiE(chain.jet_pT[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_E[j])
+	    b2.SetPtEtaPhiE(chain.jet_pT[k], chain.jet_eta[k], chain.jet_phi[k], chain.jet_E[k])
+            if b1.Pt() > jet_pt and abs(b1.Eta()) < jet_eta and chain.jet_CSV[j] > jet_CSV_tight and b2.Pt() > jet_pt and abs(b2.Eta()) < jet_eta and chain.jet_CSV[k] > jet_CSV_tight:
+	      #if not data :
 #	      b1 *= chain.jet_JER_Nom[j]
 #	      b2 *= chain.jet_JER_Nom[k]
-	    dR = b1.DeltaR(b2)
-	    combidR.append([j,k])
-	    
-	    #CNN input
-	    dataset.append([
-	      dR,abs(b1.Eta()-b2.Eta()),b1.DeltaPhi(b2),
-	      (b1+b2+nu).Pt(),(b1+b2+nu).Eta(),(b1+b2+nu).Phi(),(b1+b2+nu).M(),
-	      (b1+b2+lep).Pt(),(b1+b2+lep).Eta(),(b1+b2+lep).Phi(),(b1+b2+lep).M(),
-	      (b1+lep).Pt(),(b1+lep).Eta(),(b1+lep).Phi(),(b1+lep).M(),
-	      (b2+lep).Pt(),(b2+lep).Eta(),(b2+lep).Phi(),(b2+lep).M(),
-	      (b1+b2).Pt(),(b1+b2).Eta(),(b1+b2).Phi(),(b1+b2).M(),
-	      chain.jet_CSV[j],chain.jet_CSV[k],
-	      b1.Pt(),b2.Pt(),b1.Eta(),b2.Eta(),b1.Phi(),b2.Phi(),b1.E(),b2.E()
-	    ])
+	      dR = b1.DeltaR(b2)
+	      combidR.append([j,k])
+	      
+	      #CNN input
+	      dataset.append([
+		dR,abs(b1.Eta()-b2.Eta()),b1.DeltaPhi(b2),
+		(b1+b2+nu).Pt(),(b1+b2+nu).Eta(),(b1+b2+nu).Phi(),(b1+b2+nu).M(),
+		(b1+b2+lep).Pt(),(b1+b2+lep).Eta(),(b1+b2+lep).Phi(),(b1+b2+lep).M(),
+		(b1+lep).Pt(),(b1+lep).Eta(),(b1+lep).Phi(),(b1+lep).M(),
+		(b2+lep).Pt(),(b2+lep).Eta(),(b2+lep).Phi(),(b2+lep).M(),
+		(b1+b2).Pt(),(b1+b2).Eta(),(b1+b2).Phi(),(b1+b2).M(),
+		chain.jet_CSV[j],chain.jet_CSV[k],
+		b1.Pt(),b2.Pt(),b1.Eta(),b2.Eta(),b1.Phi(),b2.Phi(),b1.E(),b2.E()
+	      ])
 
-	    tmp_idx = []
-	    tmp_idx.append(j)
-	    tmp_idx.append(k)
-	    if dR < minimumdR :
-	      minimumdR = dR
-	      mindR_idx = tmp_idx
+	      tmp_idx = []
+	      tmp_idx.append(j)
+	      tmp_idx.append(k)
+	      if dR < minimumdR :
+		minimumdR = dR
+		mindR_idx = tmp_idx
 
       #gen level additional bjets
       gen_addbjet1 = TLorentzVector()
@@ -495,11 +485,10 @@ def ana(directory, inputFile, process) :
 	  h_nbjets[passchannel][iStep].Fill(nbjets, eventweight)
 	  h_reco_addjets_deltaR[passchannel][iStep].Fill(reco_dR, eventweight)
 	  h_reco_addjets_invMass[passchannel][iStep].Fill(reco_M, eventweight)
-	  if ttbb :
-	    h_gen_addbjets_deltaR[passchannel][iStep].Fill(gen_dR, eventweight)
-	    h_gen_addbjets_invMass[passchannel][iStep].Fill(gen_M, eventweight)
-	    h_respMatrix_deltaR[passchannel][iStep].Fill(reco_dR, gen_dR, eventweight)
-	    h_respMatrix_invMass[passchannel][iStep].Fill(reco_M, gen_M, eventweight)
+          h_gen_addbjets_deltaR[passchannel][iStep].Fill(gen_dR, eventweight)
+          h_gen_addbjets_invMass[passchannel][iStep].Fill(gen_M, eventweight)
+          h_respMatrix_deltaR[passchannel][iStep].Fill(reco_dR, gen_dR, eventweight)
+          h_respMatrix_invMass[passchannel][iStep].Fill(reco_M, gen_M, eventweight)
 	  
     matching_DNN = 0.0
     matching_mindR = 0.0
@@ -546,6 +535,32 @@ def ana(directory, inputFile, process) :
 	h_gen_addbjets_invMass[iChannel][iStep].ClearUnderflowAndOverflow()
 	h_respMatrix_deltaR[iChannel][iStep].ClearUnderflowAndOverflow()
 	h_respMatrix_invMass[iChannel][iStep].ClearUnderflowAndOverflow()
+
+    f_out.cd()
+    for i in range(0,2) : 
+      if ttbb :
+        h_gen_addbjets_deltaR_nosel[i].Write()
+	h_gen_addbjets_invMass_nosel[i].Write()
+      else :
+	h_gen_addbjets_deltaR_nosel[i].Delete()
+	h_gen_addbjets_invMass_nosel[i].Delete()
+      for j in range(0,4) :
+        h_lepton_pt[i][j].Write()
+        h_lepton_eta[i][j].Write()
+        h_njets[i][j].Write()
+        h_nbjets[i][j].Write()
+        h_reco_addjets_deltaR[i][j].Write()
+        h_reco_addjets_invMass[i][j].Write()
+        if ttbb :
+          h_gen_addbjets_deltaR[i][j].Write()
+          h_gen_addbjets_invMass[i][j].Write()
+          h_respMatrix_deltaR[i][j].Write()
+          h_respMatrix_invMass[i][j].Write()
+        else :
+          h_gen_addbjets_deltaR[i][j].Delete()
+          h_gen_addbjets_invMass[i][j].Delete()
+          h_respMatrix_deltaR[i][j].Delete()
+          h_respMatrix_invMass[i][j].Delete()
     f_out.Write()
     f_out.Close()
 
