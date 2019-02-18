@@ -259,6 +259,7 @@ entries = chain.GetEntries()
 jetindex = open("jetindex.txt", 'w')
 
 nEvents = 0
+nEvents_matchable = 0
 nEvents_match = 0
 nEvents_match_dR = 0
 
@@ -317,6 +318,9 @@ for i in xrange(entries):
       addbjet1_matched = tmp;
     if addbjet2.DeltaR( tmp ) < 0.4:
       addbjet2_matched = tmp;
+
+  if addbjet1_matched.Pt() > 0 and  addbjet2_matched.Pt() > 0 :
+    nEvents_matchable =  nEvents_matchable + 1 
 
   small_dR = 999
   test_data = []
@@ -544,6 +548,7 @@ for i in xrange(entries):
 
   #print match1 , " ", match2
   if nEvents%1000 == 0:
+    print "nEvents (matchable) = ", nEvents, "nEvents_matchable = ", nEvents_matchable
     print "nEvents (DNN) = ", nEvents, "nEvents_match = ", nEvents_match 
     print "nEvents (dR)  = ", nEvents, "nEvents_match = ", nEvents_match_dR 
   c = str(chain.event) + ' , ' + str(sel[maxval][0]) + ' , ' +  str(sel[maxval][1]) + '\n'
@@ -557,9 +562,11 @@ f_hist.Close()
 jetindex.close()
 f.Write()
 f.Close()
+
+match_matchable = nEvents_matchable / nEvents
 match_rate = nEvents_match / nEvents
 match_rate_dR = nEvents_match_dR / nEvents
-print "matching rate from DNN = " , match_rate , "matching rate from dR =",  match_rate_dR
+print "matable rate = ", match_matchable, "matching rate from DNN = " , match_rate , "matching rate from dR =",  match_rate_dR
 
 timer.Stop()
 rtime = timer.RealTime(); # Real time (or "wall time")
