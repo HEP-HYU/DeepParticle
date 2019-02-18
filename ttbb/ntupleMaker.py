@@ -34,7 +34,7 @@ dPhi = array( 'd', [0] )
 nuPt = array( 'd', [0] )
 nuEta = array( 'd', [0] )
 nuPhi = array( 'd', [0] )
-nuMass = array( 'd', [0] )
+nuM = array( 'd', [0] )
 lbPt = array( 'd', [0] )
 lbEta = array( 'd', [0] )
 lbPhi = array( 'd', [0] )
@@ -77,7 +77,7 @@ t.Branch('dPhi', dPhi, 'dPhi/D')
 t.Branch('nuPt', nuPt, 'nuPt/D')
 t.Branch('nuEta', nuEta, 'nuEta/D')
 t.Branch('nuPhi', nuPhi, 'nuPhi/D')
-t.Branch('nuMass', nuMass, 'nuMass/D')
+t.Branch('nuM', nuM, 'nuM/D')
 t.Branch('lbPt', lbPt, 'lbPt/D')
 t.Branch('lbEta', lbEta, 'lbEta/D')
 t.Branch('lbPhi', lbPhi, 'lbPhi/D')
@@ -120,13 +120,13 @@ entries = chain.GetEntries()
 for i in xrange(entries):
   chain.GetEntry(i)
 
-  eventweight = chain.PUWeight[0]*chain.genweight*chain.lepton_SF[0]*chain.jet_SF_CSV[0]
+  eventweight = chain.PUWeight[0]*chain.genweight*chain.lepton_SF[0]*chain.jet_SF_deepCSV_30[0]
 
   MET_px = chain.MET * math.cos( chain.MET_phi )
   MET_py = chain.MET * math.sin( chain.MET_phi )
   nu = TLorentzVector( MET_px, MET_py, 0, chain.MET)
   lep = TLorentzVector() 
-  lep.SetPtEtaPhiE( chain.lepton_pT, chain.lepton_eta, chain.lepton_phi, chain.lepton_E)
+  lep.SetPtEtaPhiE( chain.lepton_pt, chain.lepton_eta, chain.lepton_phi, chain.lepton_e)
   passmu = False
   passel = False
   passmu = chain.channel == 0 and lep.Pt() > 30 and abs(lep.Eta()) < 2.1
@@ -144,9 +144,9 @@ for i in xrange(entries):
 
   njets = 0
   nbjets = 0 
-  for j in range( len(chain.jet_pT) ):
+  for j in range( len(chain.jet_pt) ):
     jet = TLorentzVector()
-    jet.SetPtEtaPhiE(chain.jet_pT[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_E[j])
+    jet.SetPtEtaPhiE(chain.jet_pt[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_e[j])
     jet *= chain.jet_JER_Nom[j]
     if jet.Pt() < 30 or abs(jet.Eta()) > 2.4 :
       continue
@@ -154,7 +154,7 @@ for i in xrange(entries):
     btag = 0.9535 #tight working point
     #btag = 0.8484 #medium working point
     #btag = 0.54264 #loose working point
-    if chain.jet_CSV[j] > btag:
+    if chain.jet_SF_deepCSV_30[j] > btag:
       nbjets = nbjets+1
 
   if njets < 6:  
@@ -162,9 +162,9 @@ for i in xrange(entries):
   if nbjets < 3:
     continue
  
-  for i in range( len(chain.jet_pT) ):
+  for i in range( len(chain.jet_pt) ):
     tmp = TLorentzVector()
-    tmp.SetPtEtaPhiE( chain.jet_pT[i], chain.jet_eta[i], chain.jet_phi[i], chain.jet_E[i] )
+    tmp.SetPtEtaPhiE( chain.jet_pt[i], chain.jet_eta[i], chain.jet_phi[i], chain.jet_e[i] )
     #when finding matched jet, not use pt and eta
     #tmp *= chain.jet_JER_Nom[i]
     #if tmp.Pt() > 20 and abs(tmp.Eta()) < 2.4: 
@@ -177,29 +177,29 @@ for i in xrange(entries):
   if addbjet1_matched.Pt() > 0 and  addbjet2_matched.Pt() > 0 :
     nEvents_matchable =  nEvents_matchable + 1 
 
-  for j in range( len(chain.jet_pT) - 1):
-    for k in range( j+1, len(chain.jet_pT) ):
+  for j in range( len(chain.jet_pt) - 1):
+    for k in range( j+1, len(chain.jet_pt) ):
       jet1 = TLorentzVector()
-      jet1.SetPtEtaPhiE( chain.jet_pT[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_E[j] )
+      jet1.SetPtEtaPhiE( chain.jet_pt[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_e[j] )
       jet1 *= chain.jet_JER_Nom[j]
       jet2 = TLorentzVector()
-      jet2.SetPtEtaPhiE( chain.jet_pT[k], chain.jet_eta[k], chain.jet_phi[k], chain.jet_E[k] )
+      jet2.SetPtEtaPhiE( chain.jet_pt[k], chain.jet_eta[k], chain.jet_phi[k], chain.jet_e[k] )
       jet2 *= chain.jet_JER_Nom[k]
 
       #when training, not applying jet pt and eta for signal sample
       #acceptanceCutOnJets = jet1.Pt() > 20 and abs(jet1.Eta()) < 2.4 and jet2.Pt() > 20 and abs(jet2.Eta()) < 2.4
-      if chain.jet_CSV[j] > btag and chain.jet_CSV[k] > btag:
+      if chain.jet_SF_deepCSV_30[j] > btag and chain.jet_SF_deepCSV_30[k] > btag:
 	b1 = TLorentzVector()
 	b2 = TLorentzVector()
-	b1.SetPtEtaPhiE( chain.jet_pT[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_E[j]) 
-	b2.SetPtEtaPhiE( chain.jet_pT[k], chain.jet_eta[k], chain.jet_phi[k], chain.jet_E[k]) 
+	b1.SetPtEtaPhiE( chain.jet_pt[j], chain.jet_eta[j], chain.jet_phi[j], chain.jet_e[j]) 
+	b2.SetPtEtaPhiE( chain.jet_pt[k], chain.jet_eta[k], chain.jet_phi[k], chain.jet_e[k]) 
 	dR[0] = b1.DeltaR(b2)
 	dEta[0] = abs( b1.Eta() - b2.Eta())
 	dPhi[0] = b1.DeltaPhi(b2)
 	nuPt[0] = (b1+b2+nu).Pt()
 	nuEta[0] = (b1+b2+nu).Eta()
 	nuPhi[0] = (b1+b2+nu).Phi()
-	nuMass[0] = (b1+b2+nu).M()
+	nuM[0] = (b1+b2+nu).M()
 	lbPt[0] = (b1+b2+lep).Pt()
 	lbEta[0] = (b1+b2+lep).Eta()
 	lbPhi[0] = (b1+b2+lep).Phi()
@@ -224,8 +224,8 @@ for i in xrange(entries):
 	diEta[0] = (b1+b2).Eta()
 	diPhi[0] = (b1+b2).Phi()
 	diMass[0] = (b1+b2).M()
-	csv1[0] = chain.jet_CSV[j] 
-	csv2[0] = chain.jet_CSV[k]
+	csv1[0] = chain.jet_SF_deepCSV_30[j] 
+	csv2[0] = chain.jet_SF_deepCSV_30[k]
 	pt1[0] = b1.Pt()
 	pt2[0] = b2.Pt()
 	eta1[0] = b1.Eta()
